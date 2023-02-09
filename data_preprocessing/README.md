@@ -22,4 +22,12 @@ Lastly the 3 prepared files are being used to create the needed data sets (creat
 
 
 
-(Copy for each data file is meant to be a backup)
+
+# Public links for datasets:
+
+- 2017_1 : https://ucloud.univie.ac.at/index.php/s/bbbhsqsRYWraYd0
+- 2017_2 : https://ucloud.univie.ac.at/index.php/s/xooDNuoLZoOmaDr
+- 2018_1 : https://ucloud.univie.ac.at/index.php/s/8u7LC7kgaWbHvv0
+- 2018_2 : https://ucloud.univie.ac.at/index.php/s/s3rAAiuonXAyHGf
+- 2019_1 : https://ucloud.univie.ac.at/index.php/s/Pd1VLIKlkpTjYv4
+- 2019_2 : https://ucloud.univie.ac.at/index.php/s/7naiqlJSRRK6ur7
