@@ -1,13 +1,13 @@
-# datasets that need to be ignored
-data/test_set
-data/training_set_s
-data/training_set_l
-data/validation_set
+## datasets that need to be ignored
+data/interim/test_set
+data/interim/training_set_s
+data/interim/training_set_l
+data/interim/validation_set
 
-# preprocessed datasets
-data_preprocessing/2017_1
-data_preprocessing/2017_2
-data_preprocessing/2018_1
-data_preprocessing/2018_2
-data_preprocessing/2019_1
-data_preprocessing/2019_2
+## datasets that still needed to be prepared and being used by ```data_preperation```
+data/raw/2017_1
+data/raw/2017_2
+data/raw/2018_1
+data/raw/2018_2
+data/raw/2019_1
+data/raw/2019_2
