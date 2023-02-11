@@ -1,0 +1,7 @@
+# processing polusa data
+joblib==1.2.0
+tk
+
+# computation
+pandas==1.5.2
+nltk==3.8.1
