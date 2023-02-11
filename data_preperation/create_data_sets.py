@@ -43,13 +43,13 @@ def handle_data_selection(data):
 
 
 #  load and seelct data for different data sets
-df = load(dirname + '/2017_1')
+df = load(dirname + '/../data/raw/2017_1')
 handle_data_selection(df)
 
-df = load(dirname + '/2018_2')
+df = load(dirname + '/../data/raw/2018_2')
 handle_data_selection(df)
 
-df = load(dirname + '/2019_2')
+df = load(dirname + '/../data/raw/2019_2')
 handle_data_selection(df)
 
 
@@ -58,20 +58,20 @@ handle_data_selection(df)
 df_training = pd.DataFrame(trainingSet)
 print("---------- Training set small ----------")
 print(df_training.head())
-filename = os.path.join(dirname, '../data/training_set_s')
+filename = os.path.join(dirname, '/../data/interim/training_set_s')
 dump(df_training, filename, compress=4)
 # '../data/training_set', compress=4)
 
 df_gold_validation = pd.DataFrame(goldValidationSet)
 print("---------- Gold Validation set ----------")
 print(df_gold_validation.head())
-filename = os.path.join(dirname, '../data/validation_set')
+filename = os.path.join(dirname, '/../data/interim/validation_set')
 dump(df_gold_validation, filename, compress=4)
 
 df_test = pd.DataFrame(testSet)
 print("---------- Test set ----------")
 print(df_test.head())
-filename = os.path.join(dirname, '../data/test_set')
+filename = os.path.join(dirname, '/../data/interim/test_set')
 dump(df_test, filename, compress=4)
 
 

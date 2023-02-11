@@ -25,22 +25,22 @@ def handle_data_selection(data):
 
 
 #  load and seelct data for different data sets
-df = load(dirname + '/2017_1')
+df = load(dirname + '/../data/raw/2017_1')
 handle_data_selection(df)
 
-df = load(dirname + '/2017_2')
+df = load(dirname + '/../data/raw/2017_2')
 handle_data_selection(df)
 
-df = load(dirname + '/2018_1')
+df = load(dirname + '/../data/raw/2018_1')
 handle_data_selection(df)
 
-df = load(dirname + '/2018_2')
+df = load(dirname + '/../data/raw/2018_2')
 handle_data_selection(df)
 
-df = load(dirname + '/2019_1')
+df = load(dirname + '/../data/raw/2019_1')
 handle_data_selection(df)
 
-df = load(dirname + '/2019_2')
+df = load(dirname + '/../data/raw/2019_2')
 handle_data_selection(df)
 
 
@@ -49,7 +49,7 @@ handle_data_selection(df)
 df_training = pd.DataFrame(trainingSet)
 print("---------- Training set large ----------")
 print(df_training.head())
-filename = os.path.join(dirname, '../data/training_set_l')
+filename = os.path.join(dirname, '/../data/interim/training_set_l')
 dump(df_training, filename, compress=4)
 
 

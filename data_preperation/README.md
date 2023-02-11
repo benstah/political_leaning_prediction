@@ -1,6 +1,6 @@
 # Structure and files of this directory
 
-This directory includes 3 files (2017_1, 2018_2, 2019_2) which are taken out of the polusa dataset and have been manipulated in a way to use them for further processing.
+This directory uses 3 files (2017_1, 2018_2, 2019_2) which are taken out of the polusa dataset and have been manipulated in a way to use them for further processing.They are being found in ```data/raw/*```
 
 # step 1
 All 3 files are originating from csv's and have been transformed to a panda structure and saved in a compressed format through joblib. This has been done by the '''csv_dump.py''' script.

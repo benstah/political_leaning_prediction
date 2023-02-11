@@ -2,12 +2,13 @@ from tkinter import Tk, StringVar, IntVar, N, W, E, S, Scrollbar
 from tkinter import ttk
 from joblib import load, dump
 import pandas as pd
-
+import os
 
 class ReadPolusaArticles:
     
     def __init__(self, root):
-        self.df = load('2017_1')
+        dirname = os.path.dirname(__file__)
+        self.df = load(dirname + '/../data/raw/2017_1')
         print(self.df.head())
 
         root.title = "Polusa Dataset Articles"
@@ -81,8 +82,10 @@ class ReadPolusaArticles:
 
     
     def saveRating(self, *args):
+        dirname = os.path.dirname(__file__)
+
         self.df.at[self.article.get(), 'rating'] = self.rating.get()
-        dump(self.df, '2017_1', compress=3)
+        dump(self.df, dirname + '/../data/raw/2017_1', compress=3)
         self.saved_hint.set('Saved Rating!')
         self.stats()
 
