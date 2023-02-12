@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import re
 import string
+# import numpy as np
 
 from joblib import load, dump
 from nltk.tokenize import word_tokenize   # nltk punkt must have been downloaded before
@@ -57,6 +58,7 @@ def _remove_punctuation(text):
 
 # preprocess all the data
 def _preprocess(text):
+
     text = _remove_amp(text)
     text = _remove_links(text)
     text = _remove_hashes(text)
@@ -83,34 +85,53 @@ dirname = os.path.dirname(__file__)
 ############ Training set small ############
 df_training_s = load(dirname + '/../../data/interim/training_set_s')
 
-training_set = []
-for index, row in df_training_s.iterrows():
-    new_row = row.copy()
-    new_row.headline = _preprocess(str(row.headline))
-    new_row.lead = _preprocess(str(row.lead))
-    new_row.body = _preprocess(str(row.body))
-    training_set.append(new_row)
-    if (index % 1000) == 0:
-        print(index)
+# training_set = []
+# for index, row in df_training_s.iterrows():
+#     new_row = row.copy()
+#     new_row.headline = _preprocess(str(row.headline))
+#     new_row.lead = _preprocess(str(row.lead))
+#     new_row.body = _preprocess(str(row.body))
+#     training_set.append(new_row)
+#     if (index % 1000) == 0:
+#         print(index)
 
-df_training = pd.DataFrame(training_set)
-dump(df_training, dirname + '/../../data/processed/training_set_s', compress=4) 
+# df_training = pd.DataFrame(training_set)
+
+
+print("step 1")
+df_training_s["headline"] = df_training_s["headline"].astype(str)
+df_training_s["lead"] = df_training_s["lead"].astype(str)
+df_training_s["body"] = df_training_s["body"].astype(str)
+# df_training_s["headline"] = [_preprocess(s) for s in df_training_s["headline"]]
+# df_training_s["headline"] = np.vectorize(_preprocess)(df_training_s["headline"])
+
+df_training_s["headline"] = df_training_s["headline"].map(lambda x: _preprocess(x))
+print(df_training_s["headline"])
+print("step 2")
+df_training_s["lead"] = df_training_s["lead"].map(lambda x: _preprocess(x))
+print("step 3")
+df_training_s["body"] = df_training_s["body"].map(lambda x: _preprocess(x))
+
+
+print("compress...")
+dump(df_training_s, dirname + '/../../data/processed/training_set_s', compress=4) 
+print("done...")
 
 ############ Training set large ############
 df_training_l = load(dirname + '/../../data/interim/training_set_l')
 
-training_set_l = []
-for index, row in df_training_l.iterrows():
-    new_row = row.copy()
-    new_row.headline = _preprocess(str(row.headline))
-    new_row.lead = _preprocess(str(row.lead))
-    new_row.body = _preprocess(str(row.body))
-    training_set_l.append(new_row)
-    if (index % 1000) == 0:
-        print(index)
 
-df_training_l = pd.DataFrame(training_set_l)
-dump(df_training_l, dirname + '/../../data/processed/training_set_s', compress=4) 
+df_training_l["headline"] = df_training_l["headline"].astype(str)
+df_training_l["lead"] = df_training_l["lead"].astype(str)
+df_training_l["body"] = df_training_l["body"].astype(str)
+print("step 1")
+df_training_l["headline"] = df_training_l["headline"].map(lambda x: _preprocess(x))
+print("step 2")
+df_training_l["lead"] = df_training_l["lead"].map(lambda x: _preprocess(x))
+print("step 3")
+df_training_l["body"] = df_training_l["body"].map(lambda x: _preprocess(x))
+
+dump(df_training_l, dirname + '/../../data/processed/training_set_l', compress=4) 
 
 ############ Validation set ############
 df_validation = load(dirname + '/../../data/interim/validation_set')
