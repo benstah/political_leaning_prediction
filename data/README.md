@@ -32,4 +32,12 @@
 - ./interim/training_set_s : https://ucloud.univie.ac.at/index.php/s/pmxM5fzeV6BTz6z
 - ./interim/training_set_l : https://ucloud.univie.ac.at/index.php/s/BZfkwGErRrEC69m
 - ./interim/validation_set : https://ucloud.univie.ac.at/index.php/s/0DVl1hZuYmhqcfi
-- ./interim/test_set : https://ucloud.univie.ac.at/index.php/s/Mduk47OoG4ngzcR
+- ./interim/test_set :       https://ucloud.univie.ac.at/index.php/s/Mduk47OoG4ngzcR
+
+
+### Links for downloading/viewing processed datasets
+
+- ./processed/training_set_s : https://ucloud.univie.ac.at/index.php/s/DWF03kSMfopJe7S
+- ./processed/training_set_l : https://ucloud.univie.ac.at/index.php/s/0LJYR2fUAQVPHDP
+- ./processed/validation_set : https://ucloud.univie.ac.at/index.php/s/Wrk7ZWnAIAYhYrO
+- ./processed/test_set :       https://ucloud.univie.ac.at/index.php/s/inZfVXCvT31GwWt 
