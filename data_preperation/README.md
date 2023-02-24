@@ -21,6 +21,9 @@ Lastly the 3 prepared files are being used to create the needed data sets (creat
   - Test set (approx. 200 articles for testing)
 
 
+# step 5
+As the training loop was already set up, it came in handy to use the characteristics of the labels as ids (numbers) therefore the script '''add_labels_id.py''' was used to add another column to the dataframe and make the handling labels easier in the training.
+
 
 
 # Public links for datasets:
