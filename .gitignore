@@ -14,3 +14,5 @@ data/raw/2019_2
 
 
 data/processed/*
+
+best_model.pt
