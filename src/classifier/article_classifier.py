@@ -1,4 +1,5 @@
 from torch import nn
+import torch
 
 class ArticleClassifier(nn.Module):
     def __init__(self, base_model):
@@ -12,7 +13,11 @@ class ArticleClassifier(nn.Module):
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, input_ids, attention_mask):
-        bert_out = self.bert(input_ids=input_ids, attention_mask=attention_mask)[0][:, 0]
+        ids = torch.stack(input_ids)
+        # print(ids)
+        # print(input_ids)
+        bert_out = self.bert(input_ids=input_ids[0], attention_mask=attention_mask[0])[0][:, 0]
+        # bert_out = self.bert(input_ids=input_ids, attention_mask=attention_mask)[0][:, 0]
         x = self.fc1(bert_out)
         x = self.relu(x)
         

@@ -24,15 +24,30 @@ class Trainer:
             total_loss_train = 0
             
             model.train()
-            
-            for train_input, train_label in tqdm(train_dataloader):
-                attention_mask = train_input['attention_mask'].to(device)
-                input_ids = train_input['input_ids'].squeeze(1).to(device)
 
-                train_label = train_label.to(device)
+            for train_input1, train_input2, train_input3, train_label in tqdm(train_dataloader):
+                attention_mask = []
+                # attention_mask.append(train_input1['attention_mask'])
+                # attention_mask.append(train_input2['attention_mask'])
+                # attention_mask.append(train_input3['attention_mask'])
+                # attention_mask = attention_mask.to(device)
+                attention_mask.append(train_input1['attention_mask'].to(device))
+                attention_mask.append(train_input2['attention_mask'].to(device))
+                attention_mask.append(train_input3['attention_mask'].to(device))
+
+                # attention_mask = train_input['attention_mask'].to(device)
+                input_ids = []
+                input_ids.append(train_input1['input_ids'].squeeze(1).to(device))
+                input_ids.append(train_input2['input_ids'].squeeze(1).to(device))
+                input_ids.append(train_input3['input_ids'].squeeze(1).to(device))
+                # input_ids = train_input['input_ids'].squeeze(1).to(device)
+
+                train_label = torch.tensor(train_label).to(device)
+                # train_label = train_label.to(device)
 
                 output = model(input_ids, attention_mask)
 
+                # TODO: Check unsqueeze
                 loss = criterion(output, train_label.float().unsqueeze(1))
 
                 total_loss_train += loss.item()
@@ -50,9 +65,18 @@ class Trainer:
                 
                 model.eval()
                 
-                for val_input, val_label in tqdm(val_dataloader):
-                    attention_mask = val_input['attention_mask'].to(device)
-                    input_ids = val_input['input_ids'].squeeze(1).to(device)
+                for val_input1, val_input2, val_input3, val_label in tqdm(val_dataloader):
+                    attention_mask=[]
+                    attention_mask.append(val_input1['attention_mask'].to(device))
+                    attention_mask.append(val_input2['attention_mask'].to(device))
+                    attention_mask.append(val_input3['attention_mask'].to(device))
+                    # attention_mask = val_input['attention_mask'].to(device)
+
+                    input_ids = []
+                    input_ids.append(val_input1['input_ids'].squeeze(1).to(device))
+                    input_ids.append(val_input2['input_ids'].squeeze(1).to(device))
+                    input_ids.append(val_input3['input_ids'].squeeze(1).to(device))
+                    #input_ids = val_input['input_ids'].squeeze(1).to(device)
 
                     val_label = val_label.to(device)
 
@@ -78,7 +102,8 @@ class Trainer:
                     early_stopping_threshold_count = 0
                 else:
                     early_stopping_threshold_count += 1
-                    
-                if early_stopping_threshold_count >= 1:
+                
+                # look at optimizing early stopping again
+                if early_stopping_threshold_count >= 2:
                     print("Early stopping")
                     break
