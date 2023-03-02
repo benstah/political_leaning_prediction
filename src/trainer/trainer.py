@@ -1,20 +1,30 @@
 import torch
 from torch import nn
-from torch.optim import Adam
+from torch.optim import AdamW
 from tqdm import tqdm
 
 
 class Trainer:
     def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
         best_val_loss = float('inf')
+        best_val_acc = float('inf')
         early_stopping_threshold_count = 0
         
-        
-        use_cuda = torch.cuda.is_available()
-        device = torch.device("cuda" if use_cuda else "cpu")
 
-        criterion = nn.BCELoss()
-        optimizer = Adam(model.parameters(), lr=learning_rate)
+        # for m1 to use gpu
+        use_mps = torch.backends.mps.is_available()
+        device = torch.device("mps" if use_mps else "cpu")
+
+
+        # uncomment for computers which are running on intel
+        # use_cuda = torch.cuda.is_available()
+        # device = torch.device("cuda" if use_cuda else "cpu")
+
+        # TODO: look at bceloss, maybe take CrossEntropyLoss
+        # criterion = nn.BCELoss()
+        criterion = nn.CrossEntropyLoss()
+        # TODO: see if weight_decay should be included
+        optimizer = AdamW(model.parameters(), lr=learning_rate)
 
         model = model.to(device)
         criterion = criterion.to(device)
@@ -25,27 +35,17 @@ class Trainer:
             
             model.train()
 
-            for train_input1, train_input2, train_input3, train_label in tqdm(train_dataloader):
-                attention_mask = []
-                # attention_mask.append(train_input1['attention_mask'])
-                # attention_mask.append(train_input2['attention_mask'])
-                # attention_mask.append(train_input3['attention_mask'])
-                # attention_mask = attention_mask.to(device)
-                attention_mask.append(train_input1['attention_mask'].to(device))
-                attention_mask.append(train_input2['attention_mask'].to(device))
-                attention_mask.append(train_input3['attention_mask'].to(device))
+            for train_input, train_label in tqdm(train_dataloader):
+                
+                attention_mask = train_input['attention_mask'].to(device)
+                input_ids = train_input['input_ids'].squeeze(1).to(device)
 
-                # attention_mask = train_input['attention_mask'].to(device)
-                input_ids = []
-                input_ids.append(train_input1['input_ids'].squeeze(1).to(device))
-                input_ids.append(train_input2['input_ids'].squeeze(1).to(device))
-                input_ids.append(train_input3['input_ids'].squeeze(1).to(device))
-                # input_ids = train_input['input_ids'].squeeze(1).to(device)
-
-                train_label = torch.tensor(train_label).to(device)
+                train_label = torch.as_tensor(train_label).to(device)
                 # train_label = train_label.to(device)
 
                 output = model(input_ids, attention_mask)
+                # Softmax
+                # output = model(attention_mask)
 
                 # TODO: Check unsqueeze
                 loss = criterion(output, train_label.float().unsqueeze(1))
@@ -65,18 +65,10 @@ class Trainer:
                 
                 model.eval()
                 
-                for val_input1, val_input2, val_input3, val_label in tqdm(val_dataloader):
-                    attention_mask=[]
-                    attention_mask.append(val_input1['attention_mask'].to(device))
-                    attention_mask.append(val_input2['attention_mask'].to(device))
-                    attention_mask.append(val_input3['attention_mask'].to(device))
-                    # attention_mask = val_input['attention_mask'].to(device)
-
-                    input_ids = []
-                    input_ids.append(val_input1['input_ids'].squeeze(1).to(device))
-                    input_ids.append(val_input2['input_ids'].squeeze(1).to(device))
-                    input_ids.append(val_input3['input_ids'].squeeze(1).to(device))
-                    #input_ids = val_input['input_ids'].squeeze(1).to(device)
+                for val_input, val_label in tqdm(val_dataloader):
+                
+                    attention_mask = val_input['attention_mask'].to(device)
+                    input_ids = val_input['input_ids'].squeeze(1).to(device)
 
                     val_label = val_label.to(device)
 
@@ -95,8 +87,10 @@ class Trainer:
                     f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
                     f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
                 
-                if best_val_loss > total_loss_val:
-                    best_val_loss = total_loss_val
+                # if best_val_loss > total_loss_val:
+                #     best_val_loss = total_loss_val
+                if best_val_acc < total_acc_val:
+                    best_val_acc = total_acc_val
                     torch.save(model, f"best_model.pt")
                     print("Saved model")
                     early_stopping_threshold_count = 0
