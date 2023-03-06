@@ -61,28 +61,20 @@ if __name__ == "__main__":
     # Only for test purposes, needs to be rmoved for real training loop
     # TODO: Get statistics for undefined
     train_df = train_df.loc[train_df["political_leaning"]!="UNDEFINED"]
-    train_df = train_df.head(4000)
+    # train_df = train_df.head(200)
+    train_df = train_df.sample(n=200)
 
     # Drop other unessary columns
     train_df = train_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'rating'], axis=1)
     # drop political rating, because rating should be the columd for labels
     val_df = val_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'political_leaning'], axis=1)
 
-    print(train_df.head)
+    train_dataloader = DataLoader(ArticleDataset(train_df, tokenizer), batch_size=4, shuffle=True, num_workers=2, pin_memory=True)
+    val_dataloader = DataLoader(ArticleDataset(val_df, tokenizer), batch_size=4, num_workers=2, pin_memory=True)
 
-    # TODO: tokenize all necessary data
-    # train_df = tokenizeData(train_df, tokenizer)
-    # val_df = tokenizeData(val_df, tokenizer)
-
-    train_dataloader = DataLoader(ArticleDataset(train_df, tokenizer), batch_size=8, shuffle=True, num_workers=4, pin_memory=True)
-    val_dataloader = DataLoader(ArticleDataset(val_df, tokenizer), batch_size=8, num_workers=4, pin_memory=True)
-    # train_dataloader = DataLoader(train_df, batch_size=8, shuffle=True, num_workers=0)
-    # val_dataloader = DataLoader(val_df, batch_size=8, num_workers=0)
-
-    # model = ArticleClassifier(base_model)
-    model = ArticleClassifier(768, 1, base_model)
+    model = ArticleClassifier(base_model)
 
 
-    learning_rate = 1e-5
-    epochs = 2
+    learning_rate = 2e-5
+    epochs = 5
     t.train(model, train_dataloader, val_dataloader, learning_rate, epochs)
