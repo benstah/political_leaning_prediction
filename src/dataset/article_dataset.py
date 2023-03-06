@@ -12,16 +12,17 @@ class ArticleDataset(Dataset):
         leads = dataframe.lead.values.tolist()
         bodies = dataframe.body.values.tolist()
 
-        self._print_random_samples(headlines)
 
         concats = [' '.join(item) for item in zip(headlines, leads, bodies)]
+
+        self._print_random_samples(headlines)
 
         self.texts = [tokenizer(text, padding='max_length',
                                 # max_length=150,
                                 truncation=True,
                                 return_tensors="pt")
                       for text in concats]
-
+        
         if 'label_id' in dataframe:
             classes = dataframe.label_id.values.tolist()
             self.labels = classes
