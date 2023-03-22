@@ -24,13 +24,11 @@ class ArticleDataset(Dataset):
         #TODO: pick up a length that makes more sense (like 60-70% complete articles)
         #TODO: get first plots
         self.texts = [tokenizer(text, padding='max_length',
-                                # max_length=150,
+                                # max_length=5000,
                                 truncation=True,
                                 return_tensors="pt")
                       for text in all_texts]
-        #               for text in concats]
-
-       #  self.texts = [tokenizer(text, add_special_tokens=True) for text in all_texts]
+                      # for text in concats]
         
         if 'label_id' in dataframe:
             classes = dataframe.label_id.values.tolist()
