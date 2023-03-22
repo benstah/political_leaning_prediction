@@ -10,3 +10,6 @@ nltk==3.8.1
 torch==1.13.1
 tqdm==4.64.1
 transformers==4.26.1
+
+# ploting
+matplotlib==3.7.1
