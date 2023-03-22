@@ -3,7 +3,7 @@ import torch
 
 
 class ArticleClassifier(nn.Module):
-    def __init__(self, base_model):
+    def __init__(self, base_model, batch_size=None):
         super(ArticleClassifier, self).__init__()
 
         self.bert = base_model
