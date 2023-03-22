@@ -22,8 +22,11 @@ class Trainer:
 
         # CrossEntropyLoss already implements log_softmax
         criterion = nn.CrossEntropyLoss()
+
         # TODO: check other values of weight_decay as well
-        optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.1)
+        # TODO: Try lr=3e-5 and weight_decay=0.3
+        # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
+        optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
         criterion = criterion.to(device)
@@ -33,32 +36,39 @@ class Trainer:
             total_loss_train = 0
             
             model.train()
-
+            index = 0
             for train_input, train_label in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
+                # input_ids = train_input['input_ids'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
 
-                # attention_mask = torch.as_tensor(train_input['attention_mask'], dtype=torch.long).to(device, dtype = torch.long)
-                # input_ids = torch.as_tensor(train_input['input_ids'], dtype=torch.long).to(device, dtype = torch.long)
+                train_label = torch.as_tensor(train_label).to(device).squeeze_()
 
-                train_label = torch.as_tensor(train_label).to(device)
-                # train_label = train_label.to(device)
+                output = model(input_ids, attention_mask=attention_mask, labels=train_label)
 
-                output = model(input_ids, attention_mask)
-                # print(output)
-                # print(train_label.float().unsqueeze(1))
-
-                # loss = criterion(train_label.float().unsqueeze(1), output)
-                train_label = train_label.squeeze_()
-                loss = criterion(output, train_label)
-                # loss = criterion(output, train_label.float().unsqueeze(1))
+                # train_label = train_label.squeeze_()
+                # loss = criterion(output.logits, train_label)
+                loss = output.loss
 
                 total_loss_train += loss.item()
 
-                acc = ((output >= 0.5).int() == train_label).sum().item()
-                # acc = ((output >= 0.5).int() == train_label.unsqueeze(1)).sum().item()
+                preds = output.logits.detach()
+                # acc = ((preds.argmax(axis=1) >= 0.5).int() == train_label.unsqueeze(1)).sum().item()
+                acc = ((preds.argmax(axis=1) == train_label)).sum().item()
+                print(acc)
+
                 total_acc_train += acc
+                print(total_acc_train)
+                
+                if (index == 0):
+                    print(output)
+                    index += 1
+                    print('---------------')
+
+                print(preds.argmax(axis=1))
+                print('---------------')
+                print(train_label)
 
                 loss.backward()
                 optimizer.step()
@@ -74,22 +84,25 @@ class Trainer:
                 
                     attention_mask = val_input['attention_mask'].to(device)
                     input_ids = val_input['input_ids'].squeeze(1).to(device)
+                    val_label = torch.as_tensor(val_label).to(device).squeeze_()
 
-                    val_label = val_label.to(device)
+                    # val_label = val_label.to(device)
 
-                    output = model(input_ids, attention_mask)
+                    output = model(input_ids, attention_mask=attention_mask, labels=val_label)
 
-                    val_label = val_label.squeeze_()
-                    loss = criterion(output, val_label)
-                    # loss = criterion(output, val_label.float().unsqueeze(1))
+                    # val_label = val_label.squeeze_()
+                    loss = criterion(output.logits, val_label)
+                    # loss = output.loss
 
                     total_loss_val += loss.item()
 
-                    # TODO: check unsqueeze: val_label should be enough to calc accuracy
-                    acc = ((output >= 0.5).int() == val_label).sum().item()
-                    # acc = ((output >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
+                    preds = output.logits.detach()
+                    # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
+                    acc = (preds.argmax(axis=1) == val_label).sum().item()
+
                     total_acc_val += acc
                 
+                # TODO: calculate the f1 score and precision & recall
                 print(f'Epochs: {epoch + 1} '
                     f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
                     f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
