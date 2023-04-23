@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
-# from transformers import AutoTokenizer, AutoModel
 from transformers import AutoTokenizer, DistilBertModel, DistilBertForSequenceClassification, DistilBertForTokenClassification
 
 import sys
@@ -30,13 +29,8 @@ if __name__ == "__main__":
     torch.manual_seed(0)
     np.random.seed(0)
         
-    # eventually use distilBERT  
-    # BERT_MODEL = "roberta-base"
     BERT_MODEL = 'distilbert-base-uncased'
-    # tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
-    # base_model = AutoModel.from_pretrained(BERT_MODEL)
     tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
-    # base_model = DistilBertModel.from_pretrained(BERT_MODEL)
     model = DistilBertForSequenceClassification.from_pretrained(BERT_MODEL, num_labels=4)
 
     # Load datasets training and val data
@@ -45,11 +39,11 @@ if __name__ == "__main__":
 
     # Only for test purposes, needs to be rmoved for real training loop
     train_df = train_df.loc[train_df["political_leaning"]!="UNDEFINED"]
-    train_df = train_df.sample(n=200)
+    train_df = train_df.sample(n=2000)
 
     # Drop other unessary columns
     train_df = train_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'rating'], axis=1)
-    # drop political rating, because rating should be the columd for labels
+    # drop political rating, because rating should be the column for labels
     val_df = val_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'political_leaning'], axis=1)
 
     batch_size = 8
@@ -61,6 +55,6 @@ if __name__ == "__main__":
 # Batch size: 16, 32
 # Learning rate (Adam): 5e-5, 3e-5, 2e-5
 # Number of epochs: 2, 3, 4
-    learning_rate = 5e-5
-    epochs = 3
+    learning_rate = 1e-5
+    epochs = 10
     t.train(model, train_dataloader, val_dataloader, learning_rate, epochs)

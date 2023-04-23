@@ -9,26 +9,30 @@ class ArticleDataset(Dataset):
     def __init__(self, dataframe, tokenizer):
 
         headlines = dataframe.headline.values.tolist()
-        leads = dataframe.lead.values.tolist()
+        # leads = dataframe.lead.values.tolist()
         bodies = dataframe.body.values.tolist()
 
 
-        concats = [' '.join(item) for item in zip(headlines, leads, bodies)]
+        # concats = [' '.join(item) for item in zip(headlines, leads, bodies)]
+        concats = [' '.join(item) for item in zip(headlines, bodies)]
 
         self._print_random_samples(headlines)
 
         # truncate texts to 5000 characters
-        all_texts = [text[:4500] if len(text) > 4500 else text for text in concats]
+        # all_texts = [text[:4500] if len(text) > 4500 else text for text in concats]
         
-        #TODO: get some statistics
-        #TODO: pick up a length that makes more sense (like 60-70% complete articles)
-        #TODO: get first plots
+        #TODO: filter out articles that are too long
+        #TODO: split article in multiple
+        #TODO: max_length
+        #TODO: take part of undefined data
+
         self.texts = [tokenizer(text, padding='max_length',
-                                # max_length=150,
+                                # max_length=400,
+                                max_length=150, # only for testing purposes
                                 truncation=True,
                                 return_tensors="pt")
-                      for text in all_texts]
-        #               for text in concats]
+                      # for text in all_texts]
+                        for text in concats]
 
        #  self.texts = [tokenizer(text, add_special_tokens=True) for text in all_texts]
         
