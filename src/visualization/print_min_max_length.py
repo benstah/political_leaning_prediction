@@ -16,9 +16,11 @@ def prepareLabels(df, label):
     words_min = float('inf')
     len_max = 0
     words_max = 0
+    total_words = 0
 
     for text in concats:
         length = len(text)
+        total_words = total_words + text.count(' ')
 
         if length > len_max:
             len_max = length
@@ -28,14 +30,14 @@ def prepareLabels(df, label):
             len_min = length
             words_min = text.count(' ')
 
-        
+    average_words = total_words / len(concats)
 
     print('\n')
     print(label)
     print('--------------------------------------------------------------------')
-    print ("{:<15} {:<15} {:<15}".format(' ', 'Shortest','Longest'))
+    print ("{:<15} {:<15} {:<15} {:<15}".format(' ', 'Shortest','Longest', 'Average'))
     print ("{:<15} {:<15} {:<15}".format('Characters', str(len_min),str(len_max)))
-    print ("{:<15} {:<15} {:<15}".format('Words', str(words_min),str(words_max)))
+    print ("{:<15} {:<15} {:<15} {:<15}".format('Words', str(words_min),str(words_max), str(average_words)))
     print ('\n')
            
 

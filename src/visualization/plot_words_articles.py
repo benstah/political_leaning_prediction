@@ -86,7 +86,7 @@ percentages, counts, bar_labels, bar_colors = prepareLabels(val_df)
 plotStats(percentages, counts, bar_labels, bar_colors, title)
 
 
-title = 'Words in Articles (Head, Lead, Body) - Validation Set L'
+title = 'Words in Articles (Head, Lead, Body) - Training Set L'
 val_df = load(dirname + '/../../data/processed/training_set_l')
 percentages, counts, bar_labels, bar_colors = prepareLabels(val_df)
 plotStats(percentages, counts, bar_labels, bar_colors, title)
