@@ -143,7 +143,7 @@ class Trainer:
         print(f'Accuray f1: {accuracy_f1}')
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, val_acc=None):
         best_val_loss = float('inf')
         best_val_acc = float(0)
         early_stopping_threshold_count = 0
@@ -284,3 +284,9 @@ class Trainer:
                 if early_stopping_threshold_count >= 2:
                     print("Early stopping")
                     break
+
+        if val_acc is not None:
+            if best_val_acc > val_acc:
+                val_acc = best_val_acc
+            return val_acc
+
