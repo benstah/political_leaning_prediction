@@ -14,20 +14,20 @@ dirname = os.path.dirname(__file__)
 
 
 def _numerize_labels (political_leaning):
-        # UNDEFINED = 0
-        # RIGHT = 1
-        # LEFT = 2
-        # CENTER = 3
+        # RIGHT = 0
+        # LEFT = 1
+        # CENTER = 2
+        # UNDEFINED = 3
         # Nothing from the above = 4
 
         # for leaning in political_leaning:
-        if political_leaning == "UNDEFINED":
+        if political_leaning == "RIGHT":
             return 0
-        elif political_leaning == "RIGHT":
-            return 1
         elif political_leaning == "LEFT":
-            return 2
+            return 1
         elif political_leaning == "CENTER":
+            return 2
+        elif political_leaning == "UNDEFINED":
             return 3
         else:
             return 4

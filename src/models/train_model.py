@@ -31,7 +31,7 @@ if __name__ == "__main__":
         
     BERT_MODEL = 'distilbert-base-uncased'
     tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
-    model = DistilBertForSequenceClassification.from_pretrained(BERT_MODEL, num_labels=4)
+    model = DistilBertForSequenceClassification.from_pretrained(BERT_MODEL, num_labels=3)
 
     # Load datasets training and val data
     train_df = load(dirname + '/../../data/processed/training_set_s')
