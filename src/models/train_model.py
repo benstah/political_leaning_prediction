@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # drop political rating, because rating should be the column for labels
     val_df = val_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'political_leaning'], axis=1)
 
-    batch_size = 8
+    batch_size = 32
 
     train_dataloader = DataLoader(ArticleDataset(train_df, tokenizer), batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
     val_dataloader = DataLoader(ArticleDataset(val_df, tokenizer), batch_size=batch_size, num_workers=2, pin_memory=True)
@@ -55,6 +55,6 @@ if __name__ == "__main__":
 # Batch size: 16, 32
 # Learning rate (Adam): 5e-5, 3e-5, 2e-5
 # Number of epochs: 2, 3, 4
-    learning_rate = 1e-5
-    epochs = 10
+    learning_rate = 5e-5
+    epochs = 5
     t.train(model, train_dataloader, val_dataloader, learning_rate, epochs)

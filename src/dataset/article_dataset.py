@@ -9,11 +9,8 @@ class ArticleDataset(Dataset):
     def __init__(self, dataframe, tokenizer):
 
         headlines = dataframe.headline.values.tolist()
-        # leads = dataframe.lead.values.tolist()
         bodies = dataframe.body.values.tolist()
 
-
-        # concats = [' '.join(item) for item in zip(headlines, leads, bodies)]
         concats = [' '.join(item) for item in zip(headlines, bodies)]
 
         self._print_random_samples(headlines)
@@ -27,8 +24,8 @@ class ArticleDataset(Dataset):
         #TODO: take part of undefined data
 
         self.texts = [tokenizer(text, padding='max_length',
-                                # max_length=400,
-                                max_length=150, # only for testing purposes
+                                max_length=400,
+                                # max_length=150, # only for testing purposes
                                 truncation=True,
                                 return_tensors="pt")
                       # for text in all_texts]
@@ -40,6 +37,10 @@ class ArticleDataset(Dataset):
             classes = dataframe.label_id.values.tolist()
             self.labels = classes
 
+        if "id" in dataframe:
+            ids = dataframe.id.values.tolist()
+            self.ids = ids
+
 
     def _print_random_samples(self, texts):
         np.random.seed(42)
@@ -48,7 +49,6 @@ class ArticleDataset(Dataset):
         for i in random_entries:
             print(f"Entry {i}: {texts[i]}")
 
-        print()
 
     def __len__(self):
         return len(self.texts)
@@ -60,4 +60,7 @@ class ArticleDataset(Dataset):
         if hasattr(self, 'labels'):
             label = self.labels[idx]
 
-        return text, label
+        if hasattr(self, 'ids'):
+            id = self.ids[idx]
+
+        return text, label, id

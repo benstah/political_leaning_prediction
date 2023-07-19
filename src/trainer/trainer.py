@@ -143,7 +143,7 @@ class Trainer:
         print(f'Accuray f1: {accuracy_f1}')
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, val_acc=None):
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
         best_val_loss = float('inf')
         best_val_acc = float(0)
         early_stopping_threshold_count = 0
@@ -164,6 +164,7 @@ class Trainer:
         # TODO: check other values of weight_decay as well
         # TODO: Try lr=3e-5 and weight_decay=0.3
         # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
+        # best used 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
@@ -204,7 +205,7 @@ class Trainer:
             
             model.train()
             index = 0
-            for train_input, train_label in tqdm(train_dataloader):
+            for train_input, train_label, train_article_ids in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
@@ -245,7 +246,7 @@ class Trainer:
                 
                 model.eval()
                 
-                for val_input, val_label in tqdm(val_dataloader):
+                for val_input, val_label, val_article_ids in tqdm(val_dataloader):
                 
                     attention_mask = val_input['attention_mask'].to(device)
                     input_ids = val_input['input_ids'].squeeze(1).to(device)
@@ -275,7 +276,7 @@ class Trainer:
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val
-                    torch.save(model, f"best_model.pt")
+                    torch.save(model, f"best_model_base.pt")
                     print("Saved model")
                     early_stopping_threshold_count = 0
                 else:
@@ -284,9 +285,4 @@ class Trainer:
                 if early_stopping_threshold_count >= 2:
                     print("Early stopping")
                     break
-
-        if val_acc is not None:
-            if best_val_acc > val_acc:
-                val_acc = best_val_acc
-            return val_acc
 

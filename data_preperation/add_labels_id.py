@@ -41,25 +41,25 @@ print(df.head)
 dump(df, filename, compress=4)
 
 # add for training_set_l
-filename = dirname + '/../data/processed/training_set_l'
-df = load(filename)
-df['label_id'] = df["political_leaning"].map(lambda x: _numerize_labels(x))
-print(df.head)
-dump(df, filename, compress=4)
+# filename = dirname + '/../data/processed/training_set_l'
+# df = load(filename)
+# df['label_id'] = df["political_leaning"].map(lambda x: _numerize_labels(x))
+# print(df.head)
+# dump(df, filename, compress=4)
 
-# add for validation_set
-filename = dirname + '/../data/processed/validation_set'
-df = load(filename)
-df['label_id'] = df["rating"].map(lambda x: _numerize_labels(x))
-print(df.head)
-dump(df, filename, compress=4)
+# # add for validation_set
+# filename = dirname + '/../data/processed/validation_set'
+# df = load(filename)
+# df['label_id'] = df["rating"].map(lambda x: _numerize_labels(x))
+# print(df.head)
+# dump(df, filename, compress=4)
 
-# add for test_set
-filename = dirname + '/../data/processed/test_set'
-df = load(filename)
-df['label_id'] = df["rating"].map(lambda x: _numerize_labels(x))
-print(df.head)
-dump(df, filename, compress=4)
+# # add for test_set
+# filename = dirname + '/../data/processed/test_set'
+# df = load(filename)
+# df['label_id'] = df["rating"].map(lambda x: _numerize_labels(x))
+# print(df.head)
+# dump(df, filename, compress=4)
 
 
 
