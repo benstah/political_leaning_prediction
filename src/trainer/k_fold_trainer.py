@@ -178,13 +178,13 @@ class KTrainer:
         
 
         # for m1 to use gpu
-        use_mps = torch.backends.mps.is_available()
-        device = torch.device("mps" if use_mps else "cpu")
+        # use_mps = torch.backends.mps.is_available()
+        # device = torch.device("mps" if use_mps else "cpu")
 
 
         # uncomment for computers which are running on intel
-        # use_cuda = torch.cuda.is_available()
-        # device = torch.device("cuda" if use_cuda else "cpu")
+        use_cuda = torch.cuda.is_available()
+        device = torch.device("cuda" if use_cuda else "cpu")
 
         # CrossEntropyLoss already implements log_softmax
         criterion = nn.CrossEntropyLoss()
