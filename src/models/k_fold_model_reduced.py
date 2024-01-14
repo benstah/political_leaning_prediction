@@ -47,22 +47,28 @@ def reset_weights(m):
  # TODO: For Prod: characters back to 400
 
 if __name__ == "__main__": 
-    torch.manual_seed(0)
-    np.random.seed(0)
-        
-    BERT_MODEL = 'distilbert-base-uncased'
-    tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
-    model = DistilBertForSequenceClassification.from_pretrained(BERT_MODEL, num_labels=3)
-    val_acc = float(0)
 
-    # TODO: Change for final run. Only for testing performance
-    epochs = 2
+    # started with 2 for the different w columns
+    for i in range(4, 10):
 
-    # For fold results
-    results = {}
+        print("--------------- start with iteration " + str(i) + " -------------------------")
+    # I used the range because server is constantly blocked and I should run everything all in once so that I don't need to wait for too long
+    # Initial plan was to run every iteration manually one by one and caculate average in between to see if further steps would be necesary
+    # i = 3
+        torch.manual_seed(i)
+        np.random.seed(i)
+            
+        BERT_MODEL = 'distilbert-base-uncased'
+        tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
+        model = DistilBertForSequenceClassification.from_pretrained(BERT_MODEL, num_labels=3)
+        val_acc = float(0)
 
-    # Loop through whole dataset three times to get validation score as a avg rate
-    for i in range(3):
+        # TODO: Change for final run. Only for testing performance
+        epochs = 2
+
+        # For fold results
+        results = {}
+
         # Load datasets training and val data
         train_df = load(dirname + '/../../data/processed/training_set_s')
 
@@ -74,8 +80,8 @@ if __name__ == "__main__":
 
         # new approach: Try to keep the kFolds as small as possible to let the validation score be as least noisy as possible.
         # With this approach the algorithm runs approx. only 2 weeks
-        k_folds = math.floor(len(train_df) / 2048)
-        # k_folds = math.floor(1000 / 32)
+        k_folds = 12
+        # k_folds = math.floor(len(train_df) / 2048)
 
         kfold = KFold(n_splits=k_folds, shuffle=True)
 
@@ -97,7 +103,7 @@ if __name__ == "__main__":
             val_dataloader = DataLoader(ArticleDataset(train_df, tokenizer), batch_size=batch_size, sampler=test_subsampler, num_workers=2, pin_memory=False)
 
             # reset model
-            print('reset weights')
+            # print('reset weights')
             model.apply(reset_weights)
 
         # Recommendations for fine tuning of Bert authors
@@ -107,6 +113,3 @@ if __name__ == "__main__":
             learning_rate = 5e-5
             val_acc = t.train(model, train_dataloader, val_dataloader, learning_rate, epochs, i, val_acc, k_folds)
             print ("\ncurrent best val_acc: " +  str(val_acc))
-            
-            #TODO: remove for final run
-            # sys.exit()

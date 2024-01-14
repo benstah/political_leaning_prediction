@@ -1,0 +1,116 @@
+import numpy
+import torch
+from torch import nn
+from torch.optim import AdamW
+from tqdm import tqdm
+
+
+class Trainer:
+
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, model_name):
+        best_val_loss = float('inf')
+        best_val_acc = float(0)
+        early_stopping_threshold_count = 0
+        
+
+        # for m1 to use gpu
+        # use_mps = torch.backends.mps.is_available()
+        # device = torch.device("mps" if use_mps else "cpu")
+
+
+        # uncomment for computers which are running on intel
+        use_cuda = torch.cuda.is_available()
+        device = torch.device("cuda" if use_cuda else "cpu")
+        torch.cuda.empty_cache()
+
+        # CrossEntropyLoss already implements log_softmax
+        # criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(reduction='none')
+                # criterion = criterion.to(device)
+
+        # best used 0.0001
+        optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
+
+        model = model.to(device)
+        criterion = criterion.to(device)
+
+        for epoch in range(epochs):
+            total_acc_train = 0
+            total_loss_train = 0
+            
+            model.train()
+            index = 0
+            for train_input, train_label, train_article_ids, train_weights in tqdm(train_dataloader):
+                
+                attention_mask = train_input['attention_mask'].to(device)
+                input_ids = train_input['input_ids'].squeeze(1).to(device)
+
+                train_label = torch.as_tensor(train_label).to(device).squeeze_()
+
+
+                output = model(input_ids, attention_mask=attention_mask, labels=train_label)
+
+                logits = output.logits.detach()
+
+                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device).requires_grad_()
+
+                loss = criterion(logits, train_label)
+                loss = loss * train_weights
+                loss = torch.mean(loss)
+                total_loss_train += loss.item()
+
+                acc = ((logits.argmax(axis=1) == train_label)).sum().item()
+                
+                index += 1
+
+                total_acc_train += acc
+
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+
+            with torch.no_grad():
+                total_acc_val = 0
+                total_loss_val = 0
+                
+                model.eval()
+                
+                for val_input, val_label, val_article_ids in tqdm(val_dataloader):
+                
+                    attention_mask = val_input['attention_mask'].to(device)
+                    input_ids = val_input['input_ids'].squeeze(1).to(device)
+                    val_label = torch.as_tensor(val_label).to(device).squeeze_()
+
+                    output = model(input_ids, attention_mask=attention_mask, labels=val_label)
+
+                    loss = criterion(output.logits, val_label)
+                    loss = torch.mean(loss)
+
+                    total_loss_val += loss.item()
+
+                    preds = output.logits.detach()
+                    # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
+                    acc = (preds.argmax(axis=1) == val_label).sum().item()
+
+                    total_acc_val += acc
+
+                
+                print(f'Epochs: {epoch + 1} '
+                    f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
+                    f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
+                    f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
+                    f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
+                
+
+                if  best_val_acc < (total_acc_val / len(val_dataloader.dataset)):
+                    best_val_acc = total_acc_val / len(val_dataloader.dataset)
+                    torch.save(model, f"" + str(model_name))
+                    print("Saved model")
+                    early_stopping_threshold_count = 0
+                else:
+                    early_stopping_threshold_count += 1
+                
+                if early_stopping_threshold_count >= 2:
+                    print("Early stopping")
+                    break
+

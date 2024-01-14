@@ -18,8 +18,9 @@ try:
 except ValueError: # Already removed
     pass
 
-from trainer.trainer import Trainer as t
+from trainer.trainer_weight import Trainer as t
 from dataset.article_dataset import ArticleDataset
+from dataset.article_dataset_with_weight_average import ArticleDatasetWithWeightAverage
 
 dirname = os.path.dirname(__file__)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
     # Only for test purposes, needs to be rmoved for real training loop
     train_df = train_df.loc[train_df["political_leaning"]!="UNDEFINED"]
-    #  train_df = train_df.sample(n=2000)
+    # train_df = train_df.sample(n=100)
 
     # Drop other unessary columns
     train_df = train_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'rating'], axis=1)
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
     batch_size = 16
 
-    train_dataloader = DataLoader(ArticleDataset(train_df, tokenizer), batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
+    train_dataloader = DataLoader(ArticleDatasetWithWeightAverage(train_df, tokenizer), batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
     val_dataloader = DataLoader(ArticleDataset(val_df, tokenizer), batch_size=batch_size, num_workers=1, pin_memory=True)
 
 # Recommendations for fine tuning of Bert authors
@@ -57,4 +58,4 @@ if __name__ == "__main__":
 # Number of epochs: 2, 3, 4
     learning_rate = 5e-5
     epochs = 2
-    t.train(model, train_dataloader, val_dataloader, learning_rate, epochs)
+    t.train(model, train_dataloader, val_dataloader, learning_rate, epochs, "best_model_wa.pt")

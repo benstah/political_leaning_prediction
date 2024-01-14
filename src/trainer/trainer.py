@@ -101,7 +101,7 @@ class Trainer:
         # print(f'{class_name}: '
         #     f'| Presicion: {pres: .3f} '
         #     f'| Recall: {rec: .3f} '
-        #     f'| f1-score: {f1: .3f} '
+        #     f'| f1-score: {f1: .3f£} '
         #     f'| Support: {support}')
 
     def calculateAndDisplayF1Score(class_1, class_2, class_3, class_0 = None):
@@ -112,7 +112,7 @@ class Trainer:
         if class_0 is not None:
             pres_0, rec_0 = Trainer.getPresicionAndRecall(class_0)
             f1_0 = Trainer.getF1Score(pres_0, rec_0)
-            Trainer.printScores("Undefined 0", pres_0, rec_0, f1_0, class_0["support"])
+            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
@@ -120,21 +120,21 @@ class Trainer:
 
         pres_1, rec_1 = Trainer.getPresicionAndRecall(class_1)
         f1_1 = Trainer.getF1Score(pres_1, rec_1)
-        Trainer.printScores("Right 1", pres_1, rec_1, f1_1, class_1["support"])
+        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
         pres_2, rec_2 = Trainer.getPresicionAndRecall(class_2)
         f1_2 = Trainer.getF1Score(pres_2, rec_2)
-        Trainer.printScores("Left 2", pres_2, rec_2, f1_2, class_2["support"])
+        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
         pres_3, rec_3 = Trainer.getPresicionAndRecall(class_3)
         f1_3 = Trainer.getF1Score(pres_3, rec_3)
-        Trainer.printScores("Center 3", pres_3, rec_3, f1_3, class_3["support"])
+        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
@@ -150,13 +150,14 @@ class Trainer:
         
 
         # for m1 to use gpu
-        use_mps = torch.backends.mps.is_available()
-        device = torch.device("mps" if use_mps else "cpu")
+        # use_mps = torch.backends.mps.is_available()
+        # device = torch.device("mps" if use_mps else "cpu")
 
 
         # uncomment for computers which are running on intel
-        # use_cuda = torch.cuda.is_available()
-        # device = torch.device("cuda" if use_cuda else "cpu")
+        use_cuda = torch.cuda.is_available()
+        device = torch.device("cuda" if use_cuda else "cpu")
+        torch.cuda.empty_cache()
 
         # CrossEntropyLoss already implements log_softmax
         criterion = nn.CrossEntropyLoss()
@@ -225,12 +226,6 @@ class Trainer:
                 real_labels = train_label.cpu().numpy()
 
                 class_0, class_1, class_2, class_3 = Trainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
-
-                if index == 0 or index == 50 or index == 100 or index == 150 or index == 200:
-                    print(class_0)
-                    print(class_1)
-                    print(class_2)
-                    print(class_3)
 
                 index += 1
 

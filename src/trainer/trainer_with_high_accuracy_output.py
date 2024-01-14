@@ -175,6 +175,7 @@ class Trainer:
                 print(((output >= 0.5).int() == train_label.unsqueeze(1)).sum().item())
 
                 # acc = ((output >= 0.5).int() == train_label).sum().item()
+                # big_val, big_idx = torch.max(output.data, dim=1)
                 acc = ((output >= 0.5).int() == train_label.unsqueeze(1)).sum().item()
                 total_acc_train += acc
 

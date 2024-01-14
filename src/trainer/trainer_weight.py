@@ -3,12 +3,9 @@ import torch
 from torch import nn
 from torch.optim import AdamW
 from tqdm import tqdm
-from joblib import load, dump
-import pandas as pd
-import os
 
 
-class KTrainer:
+class Trainer:
 
     def countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0 = None):
         
@@ -104,7 +101,7 @@ class KTrainer:
         # print(f'{class_name}: '
         #     f'| Presicion: {pres: .3f} '
         #     f'| Recall: {rec: .3f} '
-        #     f'| f1-score: {f1: .3f} '
+        #     f'| f1-score: {f1: .3f£} '
         #     f'| Support: {support}')
 
     def calculateAndDisplayF1Score(class_1, class_2, class_3, class_0 = None):
@@ -113,68 +110,43 @@ class KTrainer:
         total_f1 = 0
 
         if class_0 is not None:
-            pres_0, rec_0 = KTrainer.getPresicionAndRecall(class_0)
-            f1_0 = KTrainer.getF1Score(pres_0, rec_0)
-            KTrainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
+            pres_0, rec_0 = Trainer.getPresicionAndRecall(class_0)
+            f1_0 = Trainer.getF1Score(pres_0, rec_0)
+            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
 
 
-        pres_1, rec_1 = KTrainer.getPresicionAndRecall(class_1)
-        f1_1 = KTrainer.getF1Score(pres_1, rec_1)
-        KTrainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
+        pres_1, rec_1 = Trainer.getPresicionAndRecall(class_1)
+        f1_1 = Trainer.getF1Score(pres_1, rec_1)
+        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
-        pres_2, rec_2 = KTrainer.getPresicionAndRecall(class_2)
-        f1_2 = KTrainer.getF1Score(pres_2, rec_2)
-        KTrainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
+        pres_2, rec_2 = Trainer.getPresicionAndRecall(class_2)
+        f1_2 = Trainer.getF1Score(pres_2, rec_2)
+        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
-        pres_3, rec_3 = KTrainer.getPresicionAndRecall(class_3)
-        f1_3 = KTrainer.getF1Score(pres_3, rec_3)
-        KTrainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
+        pres_3, rec_3 = Trainer.getPresicionAndRecall(class_3)
+        f1_3 = Trainer.getF1Score(pres_3, rec_3)
+        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
 
         accuracy_f1 = total_f1 / total_support 
         print(f'Accuray f1: {accuracy_f1}')
-
-    def save_scores_to_dataset(val_score_list, column_name):
-
-        print("saving to dataset:" + column_name + "\n")
-        # print(val_score_list)
-        
-        # load dataset
-        dirname = os.path.dirname(__file__)
-        filename = dirname + '/../../data/processed/training_set_s'
-        df = load(filename)
-        # update row where id in map
-        
-        for id, val_score in val_score_list.items():
-            df.loc[df['id'] == id, column_name] = val_score
-
-        # save dataset
-        dump(df, filename, compress=4)
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, iteration, val_acc=None, k_folds=None):
-    
-        val_score_ids_list = {}
-
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, model_name):
         best_val_loss = float('inf')
-        if val_acc is not None:
-            best_val_acc = val_acc
-        else:
-            best_val_acc = float(0)
+        best_val_acc = float(0)
         early_stopping_threshold_count = 0
-
-        kfold_best_val = float(0)
         
 
         # for m1 to use gpu
@@ -188,16 +160,18 @@ class KTrainer:
         torch.cuda.empty_cache()
 
         # CrossEntropyLoss already implements log_softmax
+        # criterion = nn.CrossEntropyLoss()
+        criterion_nr = nn.CrossEntropyLoss(reduction='none')
         criterion = nn.CrossEntropyLoss()
 
-        # TODO: check other values of weight_decay as well
-        # TODO: Try lr=3e-5 and weight_decay=0.3
-        # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
-        # best so far 0.0001
+                # criterion = criterion.to(device)
+
+        # best used 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
         criterion = criterion.to(device)
+        criterion_nr = criterion_nr.to(device)
 
         for epoch in range(epochs):
             total_acc_train = 0
@@ -234,32 +208,43 @@ class KTrainer:
             
             model.train()
             index = 0
-            for train_input, train_label, train_article_ids in tqdm(train_dataloader):
+            for train_input, train_label, train_article_ids, train_weights in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
 
                 train_label = torch.as_tensor(train_label).to(device).squeeze_()
 
+
                 output = model(input_ids, attention_mask=attention_mask, labels=train_label)
 
-                loss = output.loss
+                logits = output.logits.detach()
 
+                # criterion = nn.CrossEntropyLoss(reduction='none')
+                # criterion = criterion.to(device)
+
+                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device).requires_grad_()
+                train_weights = 2 - train_weights
+                # print('-------- weights')
+                # print(str(train_weights))
+
+                loss = criterion_nr(logits, train_label)
+                # print('--------')
+                # print(str(loss))
+                loss = (loss.requires_grad_() * train_weights).mean()
+                # print('--------')
+                # print(str(loss))
+                # loss = torch.mean(loss)
+                # print('--------')
+                # print(str(loss))
                 total_loss_train += loss.item()
 
-                preds = output.logits.detach()
-                acc = ((preds.argmax(axis=1) == train_label)).sum().item()
+                acc = ((logits.argmax(axis=1) == train_label)).sum().item()
                 
-                pred_labels = preds.argmax(axis=1).cpu().numpy()
+                pred_labels = logits.argmax(axis=1).cpu().numpy()
                 real_labels = train_label.cpu().numpy()
 
-                class_0, class_1, class_2, class_3 = KTrainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
-
-                # if index == 0 or index == 50 or index == 100 or index == 150 or index == 200:
-                #     print(class_0)
-                #     print(class_1)
-                #     print(class_2)
-                #     print(class_3)
+                class_0, class_1, class_2, class_3 = Trainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
 
                 index += 1
 
@@ -283,71 +268,44 @@ class KTrainer:
 
                     output = model(input_ids, attention_mask=attention_mask, labels=val_label)
 
-                    loss = criterion(output.logits, val_label)
+                    logits = output.logits.detach()
+
+                    loss_crit = nn.CrossEntropyLoss(reduction='sum')
+                    loss = loss_crit(logits, val_label)
 
                     total_loss_val += loss.item()
 
-                    preds = output.logits.detach()
-                    # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
-                    acc = (preds.argmax(axis=1) == val_label).sum().item()
+                    # print('---val---')
+                    # print(str(val_label))
+                    # print('---logits---')
+                    # print(str(logits.argmax(axis=1)))
+                    # print(str((logits.argmax(axis=1) == val_label).sum().item()))
+
+                    acc = (logits.argmax(axis=1) == val_label).sum().item()
 
                     total_acc_val += acc
 
-                    len_train = (len(train_dataloader.dataset) / k_folds) * (k_folds - 1)
-                    len_acc = len(train_dataloader.dataset) / k_folds
 
-                    # collect all ids of the validationset
-                    for val_id in val_article_ids.tolist():
-                        val_score_ids_list[val_id] = 0.0
 
-                
+            
                 print(f'Epochs: {epoch + 1} '
                     f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
-                    f'| Train Accuracy: {total_acc_train / len_train: .3f} '
+                    f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
                     f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
-                    f'| Val Accuracy: {total_acc_val / len_acc: .3f}')
+                    f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
                 
                 print('\n')
-                KTrainer.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
+                Trainer.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val
-                    torch.save(model, f"best_model.pt")
+                    torch.save(model, f"" + str(model_name))
                     print("Saved model")
                     early_stopping_threshold_count = 0
                 else:
                     early_stopping_threshold_count += 1
-
-
-                # print(val_score_ids_list)
-                # print("\n---------\n")
-                # print(str(len_acc))
-                # print("\n---------\n")
-                # print(str(kfold_best_val))
-                # print("\n---------\n")
-                # print(str(total_acc_train / len_acc))
-
-                if kfold_best_val < (total_acc_val / len_acc):
-                    kfold_best_val = (total_acc_val / len_acc)
-                    
                 
-                if early_stopping_threshold_count >= 3:
+                if early_stopping_threshold_count >= 2:
                     print("Early stopping")
                     break
-
-        # update dataset
-        # add val score to weight variable of dataset
-        for id, score in val_score_ids_list.items():
-            val_score_ids_list[id] = kfold_best_val
-
-        column = "w" + str(iteration)
-        # for the algorithm, which was running on index 0
-        # column = "w" + str(iteration+1)
-        KTrainer.save_scores_to_dataset(val_score_ids_list, column)
-
-        if val_acc is not None:
-            if best_val_acc > val_acc:
-                val_acc = best_val_acc
-
-            return val_acc
 

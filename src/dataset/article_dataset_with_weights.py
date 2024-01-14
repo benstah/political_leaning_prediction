@@ -5,7 +5,7 @@ import nltk
 import string
 import torch
 
-class ArticleDataset(Dataset):
+class ArticleDatasetWithWeightOne(Dataset):
     def __init__(self, dataframe, tokenizer):
 
         headlines = dataframe.headline.values.tolist()
@@ -15,23 +15,11 @@ class ArticleDataset(Dataset):
 
         # self._print_random_samples(headlines)
 
-        # truncate texts to 5000 characters
-        # all_texts = [text[:4500] if len(text) > 4500 else text for text in concats]
-        
-        #TODO: filter out articles that are too long
-        #TODO: split article in multiple
-        #TODO: max_length
-        #TODO: take part of undefined data
-
         self.texts = [tokenizer(text, padding='max_length',
                                 max_length=400,
-                                # max_length=150, # only for testing purposes
                                 truncation=True,
                                 return_tensors="pt")
-                      # for text in all_texts]
                         for text in concats]
-
-       #  self.texts = [tokenizer(text, add_special_tokens=True) for text in all_texts]
         
         if 'label_id' in dataframe:
             classes = dataframe.label_id.values.tolist()
@@ -40,6 +28,10 @@ class ArticleDataset(Dataset):
         if "id" in dataframe:
             ids = dataframe.id.values.tolist()
             self.ids = ids
+
+        if "w1" in dataframe:
+            weights = dataframe.w1.values.tolist()
+            self.weights = weights
 
 
     def _print_random_samples(self, texts):
@@ -63,4 +55,7 @@ class ArticleDataset(Dataset):
         if hasattr(self, 'ids'):
             id = self.ids[idx]
 
-        return text, label, id
+        if hasattr(self, 'weights'):
+            weight = self.weights[idx]
+
+        return text, label, id, weight

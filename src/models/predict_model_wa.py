@@ -236,7 +236,7 @@ if __name__ == "__main__":
         return torch.cat(results_predictions).cpu().detach().numpy()
 
 
-    model = torch.load("best_model_base.pt", map_location='cpu')
+    model = torch.load("best_model_wa.pt", map_location='cpu')
 
     BERT_MODEL = 'distilbert-base-uncased'
     tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
@@ -251,8 +251,8 @@ if __name__ == "__main__":
 
     test_dataLoader = DataLoader(ArticleDataset(test_df, tokenizer), batch_size=batch_size, num_workers=1, pin_memory=True)
 
-    sample_submission = pd.read_csv(dirname + "/../../baseline_submission.csv")
+    sample_submission = pd.read_csv(dirname + "/../../weight_average_submission.csv")
 
     sample_submission["target"] = get_predictions(model, test_dataLoader)
 
-    sample_submission.to_csv("baseline_submission.csv", index=False)
+    sample_submission.to_csv("weight_average_submission.csv", index=False)
