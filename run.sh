@@ -9,7 +9,6 @@
 #SBATCH -e myerroutput.out # STDERR
 #SBATCH --gres=gpu:1 # number of gpus
 
-source /storage/sedovaa20/benedikt/political_leaning_venv
+source /storage/sedovaa20/benedikt/political_leaning_prediction/bin/activate
 cd /storage/sedovaa20/benedikt/political_leaning_prediction
-pip3 install requirements.txt
 python3 src/models/k_fold_model.py

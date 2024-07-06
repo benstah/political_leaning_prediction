@@ -88,14 +88,15 @@ class Trainer:
         
         return 2 * ((presicion * recall) / (presicion + recall))
 
-    def printScores(class_name, pres, rec, f1, support):
+    def printScores(class_name, pres, rec, f1, support, true_positives):
 
-        print ("{:<15} {:<15} {:<15} {:<15} {:<10}"
+        print ("{:<15} {:<15} {:<15} {:<15} {:<15} {:<10}"
             .format(f'{class_name}: ', 
                     f'| Presicion: {pres: .3f} ',
                     f'| Recall: {rec: .3f} ',
                     f'| f1-score: {f1: .3f} ',
-                    f'| Support: {support}'
+                    f'| Support: {support}',
+                    f'| True Positives: {true_positives}',
                     ))
 
         # print(f'{class_name}: '
@@ -112,7 +113,7 @@ class Trainer:
         if class_0 is not None:
             pres_0, rec_0 = Trainer.getPresicionAndRecall(class_0)
             f1_0 = Trainer.getF1Score(pres_0, rec_0)
-            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
+            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"], class_0["true_positives"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
@@ -120,21 +121,21 @@ class Trainer:
 
         pres_1, rec_1 = Trainer.getPresicionAndRecall(class_1)
         f1_1 = Trainer.getF1Score(pres_1, rec_1)
-        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
+        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"], class_1["true_positives"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
         pres_2, rec_2 = Trainer.getPresicionAndRecall(class_2)
         f1_2 = Trainer.getF1Score(pres_2, rec_2)
-        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
+        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"], class_2["true_positives"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
         pres_3, rec_3 = Trainer.getPresicionAndRecall(class_3)
         f1_3 = Trainer.getF1Score(pres_3, rec_3)
-        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
+        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"], class_3["true_positives"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
@@ -161,17 +162,12 @@ class Trainer:
 
         # CrossEntropyLoss already implements log_softmax
         # criterion = nn.CrossEntropyLoss()
-        criterion_nr = nn.CrossEntropyLoss(reduction='none')
-        criterion = nn.CrossEntropyLoss()
-
-                # criterion = criterion.to(device)
 
         # best used 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
-        criterion = criterion.to(device)
-        criterion_nr = criterion_nr.to(device)
+        # criterion = criterion.to(device)
 
         for epoch in range(epochs):
             total_acc_train = 0
@@ -215,33 +211,39 @@ class Trainer:
 
                 train_label = torch.as_tensor(train_label).to(device).squeeze_()
 
-
                 output = model(input_ids, attention_mask=attention_mask, labels=train_label)
 
-                logits = output.logits.detach()
+                # big problem with the requires_grad -> 
+                # The requires grad changed the tensor into the wrong format. Because of CrossEntropyLoss which makes use of log-softmax and NLLLoss
+                # I need to make sure that I keep my data in the right format with a grad_fn=<NllLossBackward0>
+                # The requieres_grad_() changes the gradient function to grad_fn=requires_grad
+                #
+                # Example:
+                # train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device) # .requires_grad_()
+                # 
+                # If I want to multiply the weight factor with the loss of the loss function, I need to make sure that I don't loose the gradient computation history
+                # Therefore instead of writing the criterion to the device with a "mean" reduction, it will not be initialized to the device and with a reduction "none"
+                # 
+                # To ensure that I don't loose the gradient computation history I need to avoid detaching the logits and use the raw once for my model
 
-                # criterion = nn.CrossEntropyLoss(reduction='none')
-                # criterion = criterion.to(device)
 
-                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device).requires_grad_()
-                train_weights = 2 - train_weights
-                # print('-------- weights')
-                # print(str(train_weights))
+                # use the raw logits from the model output
+                logits = output.logits
 
-                loss = criterion_nr(logits, train_label)
-                # print('--------')
-                # print(str(loss))
-                loss = (loss.requires_grad_() * train_weights).mean()
-                # print('--------')
-                # print(str(loss))
-                # loss = torch.mean(loss)
-                # print('--------')
-                # print(str(loss))
+                criterion = nn.CrossEntropyLoss(reduction='none')
+
+                # calculate the loss
+                loss = criterion(logits, train_label)
+                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device)
+
+                loss = (loss * train_weights).mean()
+
                 total_loss_train += loss.item()
 
-                acc = ((logits.argmax(axis=1) == train_label)).sum().item()
+                preds = output.logits.detach()
+                acc = ((preds.argmax(axis=1) == train_label)).sum().item()
                 
-                pred_labels = logits.argmax(axis=1).cpu().numpy()
+                pred_labels = preds.argmax(axis=1).cpu().numpy()
                 real_labels = train_label.cpu().numpy()
 
                 class_0, class_1, class_2, class_3 = Trainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
@@ -257,6 +259,34 @@ class Trainer:
             with torch.no_grad():
                 total_acc_val = 0
                 total_loss_val = 0
+
+                val_class_0 = {
+                    "true_positives": 0, 
+                    "false_positives": 0,
+                    "false_negatives": 0,
+                    "support": 0,
+                }
+
+                val_class_1 = {
+                    "true_positives": 0, 
+                    "false_positives": 0,
+                    "false_negatives": 0,
+                    "support": 0,
+                }
+
+                val_class_2 = {
+                    "true_positives": 0, 
+                    "false_positives": 0,
+                    "false_negatives": 0,
+                    "support": 0,
+                }
+
+                val_class_3 = {
+                    "true_positives": 0, 
+                    "false_positives": 0,
+                    "false_negatives": 0,
+                    "support": 0,
+                }
                 
                 model.eval()
                 
@@ -268,26 +298,23 @@ class Trainer:
 
                     output = model(input_ids, attention_mask=attention_mask, labels=val_label)
 
-                    logits = output.logits.detach()
-
-                    loss_crit = nn.CrossEntropyLoss(reduction='sum')
-                    loss = loss_crit(logits, val_label)
+                    criterion = nn.CrossEntropyLoss()
+                    loss = criterion(output.logits, val_label)
 
                     total_loss_val += loss.item()
 
-                    # print('---val---')
-                    # print(str(val_label))
-                    # print('---logits---')
-                    # print(str(logits.argmax(axis=1)))
-                    # print(str((logits.argmax(axis=1) == val_label).sum().item()))
+                    preds = output.logits.detach()
+                    # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
+                    acc = (preds.argmax(axis=1) == val_label).sum().item()
 
-                    acc = (logits.argmax(axis=1) == val_label).sum().item()
+                    val_pred_labels = preds.argmax(axis=1).cpu().numpy()
+                    val_real_labels = val_label.cpu().numpy()
+
+                    val_class_0, val_class_1, val_class_2, val_class_3 = Trainer.countScores(val_real_labels, val_pred_labels, val_class_1, val_class_2, val_class_3, val_class_0)
 
                     total_acc_val += acc
 
-
-
-            
+                
                 print(f'Epochs: {epoch + 1} '
                     f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
                     f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
@@ -295,7 +322,12 @@ class Trainer:
                     f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
                 
                 print('\n')
+                print('------------------------ training scores ---------------------------')
                 Trainer.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
+                
+                print('\n')
+                print('------------------------ validation scores ---------------------------')
+                Trainer.calculateAndDisplayF1Score(val_class_1, val_class_2, val_class_3, val_class_0)
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val

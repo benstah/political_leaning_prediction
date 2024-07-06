@@ -3,55 +3,80 @@ import torch
 from torch import nn
 from torch.optim import AdamW
 from tqdm import tqdm
+from joblib import load, dump
+import pandas as pd
+import os
 
 
-class Trainer:
+class KTrainer:
 
     def countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0 = None):
+
+        # print(type(real_labels))
+        # real_labels = numpy.array(list(real_labels.tuple()))
+        if numpy.isscalar(real_labels):
+            if class_0 is None:
+                return class_1, class_2, class_3
+
+            return class_0, class_1, class_2, class_3
         
-        for i, label in enumerate(real_labels):
-            # count support
-            if label == 0:
-                class_0["support"] += 1
-            elif label == 1:
-                class_1["support"] += 1
-            elif label == 2:
-                class_2["support"] += 1
-            elif label == 3:
-                class_3["support"] += 1
+        if real_labels.size == 0:
+            if class_0 is None:
+                return class_1, class_2, class_3
 
-            # true positive
-            if label == pred_labels[i]:
-                if label == 0:
-                    class_0["true_positives"] += 1
-                elif label == 1:
-                    class_1["true_positives"] += 1
-                elif label == 2:
-                    class_2["true_positives"] += 1
-                elif label == 3:
-                    class_3["true_positives"] += 1
-            
-            # false positives and false negatives
-            else:
-                # false negatives
-                if pred_labels[i] == 0:
-                    class_0["false_positives"] += 1
-                elif pred_labels[i] == 1:
-                    class_1["false_positives"] += 1
-                elif pred_labels[i] == 2:
-                    class_2["false_positives"] += 1
-                elif pred_labels[i] == 3:
-                    class_3["false_positives"] += 1
+            return class_0, class_1, class_2, class_3
+        
+        if real_labels.size == 1:
+            real_labels = real_labels.item()
 
-                # false positives
+        if isinstance(real_labels, numpy.ndarray):
+        
+            for i, label in enumerate(real_labels):
+                # count support
                 if label == 0:
-                    class_0["false_negatives"] += 1
+                    class_0["support"] += 1
                 elif label == 1:
-                    class_1["false_negatives"] += 1
+                    class_1["support"] += 1
                 elif label == 2:
-                    class_2["false_negatives"] += 1
+                    class_2["support"] += 1
                 elif label == 3:
-                    class_3["false_negatives"] += 1
+                    class_3["support"] += 1
+
+                # true positive
+                if label == pred_labels[i]:
+                    if label == 0:
+                        class_0["true_positives"] += 1
+                    elif label == 1:
+                        class_1["true_positives"] += 1
+                    elif label == 2:
+                        class_2["true_positives"] += 1
+                    elif label == 3:
+                        class_3["true_positives"] += 1
+                
+                # false positives and false negatives
+                else:
+                    # false negatives
+                    if pred_labels[i] == 0:
+                        class_0["false_positives"] += 1
+                    elif pred_labels[i] == 1:
+                        class_1["false_positives"] += 1
+                    elif pred_labels[i] == 2:
+                        class_2["false_positives"] += 1
+                    elif pred_labels[i] == 3:
+                        class_3["false_positives"] += 1
+
+                    # false positives
+                    if label == 0:
+                        class_0["false_negatives"] += 1
+                    elif label == 1:
+                        class_1["false_negatives"] += 1
+                    elif label == 2:
+                        class_2["false_negatives"] += 1
+                    elif label == 3:
+                        class_3["false_negatives"] += 1
+
+        else:
+            print(type(real_labels))
 
         if class_0 is None:
             return class_1, class_2, class_3
@@ -101,7 +126,7 @@ class Trainer:
         # print(f'{class_name}: '
         #     f'| Presicion: {pres: .3f} '
         #     f'| Recall: {rec: .3f} '
-        #     f'| f1-score: {f1: .3f£} '
+        #     f'| f1-score: {f1: .3f} '
         #     f'| Support: {support}')
 
     def calculateAndDisplayF1Score(class_1, class_2, class_3, class_0 = None):
@@ -110,43 +135,66 @@ class Trainer:
         total_f1 = 0
 
         if class_0 is not None:
-            pres_0, rec_0 = Trainer.getPresicionAndRecall(class_0)
-            f1_0 = Trainer.getF1Score(pres_0, rec_0)
-            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
+            pres_0, rec_0 = KTrainer.getPresicionAndRecall(class_0)
+            f1_0 = KTrainer.getF1Score(pres_0, rec_0)
+            KTrainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
 
 
-        pres_1, rec_1 = Trainer.getPresicionAndRecall(class_1)
-        f1_1 = Trainer.getF1Score(pres_1, rec_1)
-        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
+        pres_1, rec_1 = KTrainer.getPresicionAndRecall(class_1)
+        f1_1 = KTrainer.getF1Score(pres_1, rec_1)
+        KTrainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
-        pres_2, rec_2 = Trainer.getPresicionAndRecall(class_2)
-        f1_2 = Trainer.getF1Score(pres_2, rec_2)
-        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
+        pres_2, rec_2 = KTrainer.getPresicionAndRecall(class_2)
+        f1_2 = KTrainer.getF1Score(pres_2, rec_2)
+        KTrainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
-        pres_3, rec_3 = Trainer.getPresicionAndRecall(class_3)
-        f1_3 = Trainer.getF1Score(pres_3, rec_3)
-        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
+        pres_3, rec_3 = KTrainer.getPresicionAndRecall(class_3)
+        f1_3 = KTrainer.getF1Score(pres_3, rec_3)
+        KTrainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
 
         accuracy_f1 = total_f1 / total_support 
         print(f'Accuray f1: {accuracy_f1}')
+
+    def save_scores_to_dataset(val_score_list, column_name):
+
+        print("saving to dataset:" + column_name + "\n")
+        # print(val_score_list)
+        
+        # load dataset
+        dirname = os.path.dirname(__file__)
+        filename = dirname + '/../../data/processed/training_set_s'
+        df = load(filename)
+        # update row where id in map
+        
+        for id, val_score in val_score_list.items():
+            df.loc[df['id'] == id, column_name] = val_score
+
+        # save dataset
+        dump(df, filename, compress=4)
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, iteration, val_acc=None, len_train=None, len_val=None):
+    
+        val_score_ids_list = {}
+
         best_val_loss = float('inf')
+        
         best_val_acc = float(0)
         early_stopping_threshold_count = 0
+
+        kfold_best_val = float(0)
         
 
         # for m1 to use gpu
@@ -165,7 +213,7 @@ class Trainer:
         # TODO: check other values of weight_decay as well
         # TODO: Try lr=3e-5 and weight_decay=0.3
         # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
-        # best used 0.0001
+        # best so far 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
@@ -205,7 +253,7 @@ class Trainer:
 
             
             model.train()
-            index = 0
+            index = 1
             for train_input, train_label, train_article_ids in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
@@ -222,10 +270,16 @@ class Trainer:
                 preds = output.logits.detach()
                 acc = ((preds.argmax(axis=1) == train_label)).sum().item()
                 
-                pred_labels = preds.argmax(axis=1).cpu().numpy()
-                real_labels = train_label.cpu().numpy()
+                pred_labels = preds.argmax(axis=1).cpu().squeeze().numpy()
+                real_labels = train_label.cpu().squeeze().numpy()
 
-                class_0, class_1, class_2, class_3 = Trainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
+                class_0, class_1, class_2, class_3 = KTrainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
+
+                # if index == 0 or index == 50 or index == 100 or index == 150 or index == 200:
+                #     print(class_0)
+                #     print(class_1)
+                #     print(class_2)
+                #     print(class_3)
 
                 index += 1
 
@@ -238,34 +292,6 @@ class Trainer:
             with torch.no_grad():
                 total_acc_val = 0
                 total_loss_val = 0
-
-                val_class_0 = {
-                    "true_positives": 0, 
-                    "false_positives": 0,
-                    "false_negatives": 0,
-                    "support": 0,
-                }
-
-                val_class_1 = {
-                    "true_positives": 0, 
-                    "false_positives": 0,
-                    "false_negatives": 0,
-                    "support": 0,
-                }
-
-                val_class_2 = {
-                    "true_positives": 0, 
-                    "false_positives": 0,
-                    "false_negatives": 0,
-                    "support": 0,
-                }
-
-                val_class_3 = {
-                    "true_positives": 0, 
-                    "false_positives": 0,
-                    "false_negatives": 0,
-                    "support": 0,
-                }
                 
                 model.eval()
                 
@@ -285,38 +311,65 @@ class Trainer:
                     # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
                     acc = (preds.argmax(axis=1) == val_label).sum().item()
 
-                    val_pred_labels = preds.argmax(axis=1).cpu().numpy()
-                    val_real_labels = val_label.cpu().numpy()
-
-                    val_class_0, val_class_1, val_class_2, val_class_3 = Trainer.countScores(val_real_labels, val_pred_labels, val_class_1, val_class_2, val_class_3, val_class_0)
-
-
                     total_acc_val += acc
+
+                    # len_train = (len(train_dataloader.dataset) / k_folds) * (k_folds - 1)
+                    # len_acc = len(train_dataloader.dataset) / k_folds
+
+                    # collect all ids of the validationset
+                    for val_id in val_article_ids.tolist():
+                        val_score_ids_list[val_id] = 0.0
 
                 
                 print(f'Epochs: {epoch + 1} '
                     f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
-                    f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
+                    f'| Train Accuracy: {total_acc_train / len_train: .3f} '
                     f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
-                    f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
+                    f'| Val Accuracy: {total_acc_val / len_val: .3f}')
                 
                 print('\n')
-                print('------------------------ training scores ---------------------------')
-                Trainer.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
-                
-                print('\n')
-                print('------------------------ validation scores ---------------------------')
-                Trainer.calculateAndDisplayF1Score(val_class_1, val_class_2, val_class_3, val_class_0)
+                KTrainer.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val
-                    torch.save(model, f"best_model_base.pt")
+                    # torch.save(model, f"best_model.pt")
                     print("Saved model")
                     early_stopping_threshold_count = 0
+
+                    # update dataset
+                    # add val score to weight variable of dataset
+                    for id, score in val_score_ids_list.items():
+                        val_score_ids_list[id] = total_acc_val / len_val
+
+                    column = "w" + str(iteration)
+                    # for the algorithm, which was running on index 0
+                    # column = "w" + str(iteration+1)
+                    KTrainer.save_scores_to_dataset(val_score_ids_list, column)
                 else:
                     early_stopping_threshold_count += 1
+
+
+                # print(val_score_ids_list)
+                # print("\n---------\n")
+                # print(str(len_acc))
+                # print("\n---------\n")
+                # print(str(kfold_best_val))
+                # print("\n---------\n")
+                # print(str(total_acc_train / len_acc))
+
+                if kfold_best_val < (total_acc_val / len_val):
+                    kfold_best_val = (total_acc_val / len_val)
+                    
                 
-                if early_stopping_threshold_count >= 2:
+                if early_stopping_threshold_count >= 3:
                     print("Early stopping")
                     break
+
+        
+
+        if val_acc is not None:
+            if best_val_acc > val_acc:
+                val_acc = best_val_acc
+
+            return val_acc
 

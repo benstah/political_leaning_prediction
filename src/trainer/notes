@@ -102,8 +102,8 @@ class Trainer:
                     f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
                 
 
-                if  best_val_acc < (total_acc_val / len(val_dataloader.dataset)):
-                    best_val_acc = total_acc_val / len(val_dataloader.dataset)
+                if best_val_acc < total_acc_val:
+                    best_val_acc = total_acc_val
                     torch.save(model, f"" + str(model_name))
                     print("Saved model")
                     early_stopping_threshold_count = 0

@@ -88,14 +88,15 @@ class Trainer:
         
         return 2 * ((presicion * recall) / (presicion + recall))
 
-    def printScores(class_name, pres, rec, f1, support):
+    def printScores(class_name, pres, rec, f1, support, true_positives):
 
-        print ("{:<15} {:<15} {:<15} {:<15} {:<10}"
+        print ("{:<15} {:<15} {:<15} {:<15} {:<15} {:<10}"
             .format(f'{class_name}: ', 
                     f'| Presicion: {pres: .3f} ',
                     f'| Recall: {rec: .3f} ',
                     f'| f1-score: {f1: .3f} ',
-                    f'| Support: {support}'
+                    f'| Support: {support}',
+                    f'| True Positives: {true_positives}',
                     ))
 
         # print(f'{class_name}: '
@@ -112,7 +113,7 @@ class Trainer:
         if class_0 is not None:
             pres_0, rec_0 = Trainer.getPresicionAndRecall(class_0)
             f1_0 = Trainer.getF1Score(pres_0, rec_0)
-            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
+            Trainer.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"], class_0["true_positives"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
@@ -120,30 +121,47 @@ class Trainer:
 
         pres_1, rec_1 = Trainer.getPresicionAndRecall(class_1)
         f1_1 = Trainer.getF1Score(pres_1, rec_1)
-        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
+        Trainer.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"], class_1["true_positives"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
         pres_2, rec_2 = Trainer.getPresicionAndRecall(class_2)
         f1_2 = Trainer.getF1Score(pres_2, rec_2)
-        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
+        Trainer.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"], class_2["true_positives"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
         pres_3, rec_3 = Trainer.getPresicionAndRecall(class_3)
         f1_3 = Trainer.getF1Score(pres_3, rec_3)
-        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
+        Trainer.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"], class_3["true_positives"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
 
         accuracy_f1 = total_f1 / total_support 
         print(f'Accuray f1: {accuracy_f1}')
+
+
+    def calculateMoreExposedWeights(min_weight, max_weight, train_weights):
+        # min_weight = 50%
+        # max_weight = 100%
+
+        # max_weight - min_weight = 50%
+        # max_weight - min_weight = 0.03
+        # max_weight - weight = 0.015
+        # 0.015 / 0.03 = 0.5
+        # weight - 0.5 * 0.5 = 0.67
+
+        max_difference = max_weight - min_weight
+        actual_difference = max_weight - train_weights
+        temp_weight = actual_difference / max_difference
+
+        return train_weights - temp_weight * 0.5
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, model_name, min_weight, max_weight):
         best_val_loss = float('inf')
         best_val_acc = float(0)
         early_stopping_threshold_count = 0
@@ -160,16 +178,13 @@ class Trainer:
         torch.cuda.empty_cache()
 
         # CrossEntropyLoss already implements log_softmax
-        criterion = nn.CrossEntropyLoss()
+        # criterion = nn.CrossEntropyLoss()
 
-        # TODO: check other values of weight_decay as well
-        # TODO: Try lr=3e-5 and weight_decay=0.3
-        # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
         # best used 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
-        criterion = criterion.to(device)
+        # criterion = criterion.to(device)
 
         for epoch in range(epochs):
             total_acc_train = 0
@@ -206,7 +221,7 @@ class Trainer:
             
             model.train()
             index = 0
-            for train_input, train_label, train_article_ids in tqdm(train_dataloader):
+            for train_input, train_label, train_article_ids, train_weights in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
@@ -215,7 +230,31 @@ class Trainer:
 
                 output = model(input_ids, attention_mask=attention_mask, labels=train_label)
 
-                loss = output.loss
+                # big problem with the requires_grad -> 
+                # The requires grad changed the tensor into the wrong format. Because of CrossEntropyLoss which makes use of log-softmax and NLLLoss
+                # I need to make sure that I keep my data in the right format with a grad_fn=<NllLossBackward0>
+                # The requieres_grad_() changes the gradient function to grad_fn=requires_grad
+                #
+                # Example:
+                # train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device) # .requires_grad_()
+                # 
+                # If I want to multiply the weight factor with the loss of the loss function, I need to make sure that I don't loose the gradient computation history
+                # Therefore instead of writing the criterion to the device with a "mean" reduction, it will not be initialized to the device and with a reduction "none"
+                # 
+                # To ensure that I don't loose the gradient computation history I need to avoid detaching the logits and use the raw once for my model
+
+
+                # use the raw logits from the model output
+                logits = output.logits
+
+                criterion = nn.CrossEntropyLoss(reduction='none')
+
+                # calculate the loss
+                loss = criterion(logits, train_label)
+                train_weights = Trainer.calculateMoreExposedWeights(min_weight, max_weight, train_weights)
+                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device)
+
+                loss = (loss * train_weights).mean()
 
                 total_loss_train += loss.item()
 
@@ -277,6 +316,7 @@ class Trainer:
 
                     output = model(input_ids, attention_mask=attention_mask, labels=val_label)
 
+                    criterion = nn.CrossEntropyLoss()
                     loss = criterion(output.logits, val_label)
 
                     total_loss_val += loss.item()
@@ -289,7 +329,6 @@ class Trainer:
                     val_real_labels = val_label.cpu().numpy()
 
                     val_class_0, val_class_1, val_class_2, val_class_3 = Trainer.countScores(val_real_labels, val_pred_labels, val_class_1, val_class_2, val_class_3, val_class_0)
-
 
                     total_acc_val += acc
 
@@ -310,7 +349,7 @@ class Trainer:
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val
-                    torch.save(model, f"best_model_base.pt")
+                    torch.save(model, f"" + str(model_name))
                     print("Saved model")
                     early_stopping_threshold_count = 0
                 else:

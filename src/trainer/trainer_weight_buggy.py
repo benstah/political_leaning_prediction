@@ -143,7 +143,7 @@ class Trainer:
         print(f'Accuray f1: {accuracy_f1}')
             
 
-    def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
+    def train(model, train_dataloader, val_dataloader, learning_rate, epochs, model_name):
         best_val_loss = float('inf')
         best_val_acc = float(0)
         early_stopping_threshold_count = 0
@@ -160,16 +160,18 @@ class Trainer:
         torch.cuda.empty_cache()
 
         # CrossEntropyLoss already implements log_softmax
+        # criterion = nn.CrossEntropyLoss()
+        criterion_nr = nn.CrossEntropyLoss(reduction='none')
         criterion = nn.CrossEntropyLoss()
 
-        # TODO: check other values of weight_decay as well
-        # TODO: Try lr=3e-5 and weight_decay=0.3
-        # TODO: Try 1e-4, 1e-3, 1e-2, 1e-1
+                # criterion = criterion.to(device)
+
         # best used 0.0001
         optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
         model = model.to(device)
         criterion = criterion.to(device)
+        criterion_nr = criterion_nr.to(device)
 
         for epoch in range(epochs):
             total_acc_train = 0
@@ -206,7 +208,7 @@ class Trainer:
             
             model.train()
             index = 0
-            for train_input, train_label, train_article_ids in tqdm(train_dataloader):
+            for train_input, train_label, train_article_ids, train_weights in tqdm(train_dataloader):
                 
                 attention_mask = train_input['attention_mask'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
@@ -215,14 +217,46 @@ class Trainer:
 
                 output = model(input_ids, attention_mask=attention_mask, labels=train_label)
 
-                loss = output.loss
+                # print('---------------- standard loss ----------------')
+                # print(str(output.loss))
 
-                total_loss_train += loss.item()
+                logits = output.logits.detach()
 
-                preds = output.logits.detach()
-                acc = ((preds.argmax(axis=1) == train_label)).sum().item()
+                # criterion = nn.CrossEntropyLoss(reduction='none')
+                # criterion = criterion.to(device)
+
+                # todo: Check that all weights are exactly cacluclated with its sample
+
+                # print('----------- weights ----------')
+                # print(str(train_weights))
+                train_weights = torch.as_tensor(train_weights, dtype=torch.float32).to(device).requires_grad_()
+                # print('----------- weights grad ----------')
+                # print(str(train_weights))
+
+                loss = criterion_nr(logits, train_label)
+                # loss = loss.requires_grad_()
                 
-                pred_labels = preds.argmax(axis=1).cpu().numpy()
+                # print('---------------- gradient loss ----------------')
+                # print(str(output.loss))
+
+                # print('----------- loss ----------')
+                # print(str(loss))
+                loss = (loss.requires_grad_() * train_weights)
+                # print('----------- calculated loss ----------')
+                # print(str(loss))
+                loss = loss.mean()
+                # print('----------- loss mean ----------')
+                # print(str(loss))
+
+                # print('----------- loss item ----------')
+                # print(str(loss.item()))
+                total_loss_train += loss.item()                
+                # print('----------- total loss ----------')
+                # print(str(total_loss_train))
+
+                acc = ((logits.argmax(axis=1) == train_label)).sum().item()
+                
+                pred_labels = logits.argmax(axis=1).cpu().numpy()
                 real_labels = train_label.cpu().numpy()
 
                 class_0, class_1, class_2, class_3 = Trainer.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
@@ -271,29 +305,55 @@ class Trainer:
                 
                 for val_input, val_label, val_article_ids in tqdm(val_dataloader):
                 
+                    # check the squeezing here
+
                     attention_mask = val_input['attention_mask'].to(device)
+                    # print('----------- attention mask -------------')
+                    # print(str(attention_mask))
                     input_ids = val_input['input_ids'].squeeze(1).to(device)
-                    val_label = torch.as_tensor(val_label).to(device).squeeze_()
+                    # print('----------- inputs ids -------------')
+                    # print(str(val_input['input_ids']))
+                    # print('----------- inputs squeezed -------------')
+                    # print(str(input_ids))
+                    # print('----------- val labels -------------')
+                    # print(str(val_label))
+                    val_label = torch.as_tensor(val_label).to(device) # .squeeze_()
+                    # print('----------- val labels squeezed -------------')
+                    # print(str(val_label))
 
                     output = model(input_ids, attention_mask=attention_mask, labels=val_label)
 
-                    loss = criterion(output.logits, val_label)
+                    logits = output.logits.detach()
 
-                    total_loss_val += loss.item()
+                    loss_crit = nn.CrossEntropyLoss()
+                    loss = loss_crit(logits, val_label)
 
-                    preds = output.logits.detach()
-                    # acc = ((preds.argmax(axis=1) >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
-                    acc = (preds.argmax(axis=1) == val_label).sum().item()
+                    print("------------- val loss item -------------")
+                    print(str(loss.item()))
 
-                    val_pred_labels = preds.argmax(axis=1).cpu().numpy()
+                    total_loss_val = total_loss_val + loss.item()
+
+                    # print('---val---')
+                    # print(str(val_label))
+                    # print('---logits---')
+                    # print(str(logits.argmax(axis=1)))
+                    # print(str((logits.argmax(axis=1) == val_label).sum().item()))
+
+                    acc = (logits.argmax(axis=1) == val_label).sum().item()
+                
+                    val_pred_labels = logits.argmax(axis=1).cpu().numpy()
                     val_real_labels = val_label.cpu().numpy()
 
                     val_class_0, val_class_1, val_class_2, val_class_3 = Trainer.countScores(val_real_labels, val_pred_labels, val_class_1, val_class_2, val_class_3, val_class_0)
 
+                    print("----------- accuracy ------------")
+                    print(acc)
+                    total_acc_val = total_acc_val + acc
+                    print(total_acc_val)
 
-                    total_acc_val += acc
 
-                
+
+            
                 print(f'Epochs: {epoch + 1} '
                     f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
                     f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
@@ -310,7 +370,7 @@ class Trainer:
 
                 if best_val_acc < total_acc_val:
                     best_val_acc = total_acc_val
-                    torch.save(model, f"best_model_base.pt")
+                    torch.save(model, f"" + str(model_name))
                     print("Saved model")
                     early_stopping_threshold_count = 0
                 else:
