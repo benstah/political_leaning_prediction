@@ -13,12 +13,14 @@ def prepareLabels(df):
     article_percentage = {}
 
     all_outlets = []
+    outlet_color = {}
 
     for outlet in outlets:
         article_count[outlet] = article_count.get(outlet, 0) + 1
         if outlet not in article_percentage:
             article_percentage[outlet] = 0.0    
 
+        
     percentages = []
     counts = []
     bar_labels = []
@@ -28,10 +30,18 @@ def prepareLabels(df):
         article_percentage[key] = article_count[key] / count_total * 100
         percentages.append(article_percentage[key])
         counts.append(article_count[key])
-        bar_labels.append('blue')
-        bar_colors.append('tab:blue')
         all_outlets.append(key)
         
+        
+        first_outlet_entry = df.loc[df["outlet"]==key].iloc[0]
+        if first_outlet_entry.political_leaning == 'CENTER':
+            bar_colors.append('tab:green')
+        elif first_outlet_entry.political_leaning == 'LEFT':
+            bar_colors.append('tab:blue')
+        elif first_outlet_entry.political_leaning == 'RIGHT':
+            bar_colors.append('tab:red')
+
+
     return percentages, counts, bar_labels, bar_colors, all_outlets
 
 
@@ -59,10 +69,9 @@ def plotStats(percentages, counts, bar_labels, bar_colors, title, outlets):
     plt.show()
 
 
-title = 'Count of Articles per Outlet - Training Set S'
+title = 'Count of Articles per Outlet - Training Set'
 val_df = load(dirname + '/../../data/processed/training_set_s')
 val_df = val_df.loc[val_df["political_leaning"]!="UNDEFINED"]
-val_df = val_df[val_df["w20"].notnull()]
 # outlets = ['NBC News', 'ABC News', 'Fox News', 'NPR', 'Los Angeles Times', 'The Guardian', 'USA Today','Breitbart','HuffPost', 'Slate', 'CBS News', 'The New York Times', 'Reuters']
 percentages, counts, bar_labels, bar_colors, outlets = prepareLabels(val_df)
 plotStats(percentages, counts, bar_labels, bar_colors, title, outlets)
