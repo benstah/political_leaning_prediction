@@ -16,9 +16,6 @@ from nltk.stem import PorterStemmer
 def _remove_amp(text):
     return text.replace("&amp;", " ")
 
-def _remove_mentions(text):
-    return re.sub(r'(@.*?)[\s]', ' ', text)
-
 def _remove_multiple_spaces(text):
     return re.sub(r'\s+', ' ', text)
 
@@ -62,13 +59,10 @@ def _preprocess(text):
     text = _remove_amp(text)
     text = _remove_links(text)
     text = _remove_hashes(text)
-    # text = _remove_retweets(text)
-    # text = _remove_mentions(text)
     text = _remove_multiple_spaces(text)
 
     text = _lowercase(text)
     text = _remove_punctuation(text)
-    #text = _remove_numbers(text)
 
     text_tokens = _tokenize(text)
     text_tokens = _stopword_filtering(text_tokens)
