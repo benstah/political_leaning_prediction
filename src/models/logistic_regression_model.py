@@ -2,6 +2,7 @@ from joblib import load
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer
 import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 import os
 import sys
@@ -93,11 +94,18 @@ if __name__ == "__main__":
 
     #TODO step 6:
     #evaluate model performance on val set
-    # Use score method to get accuracy of model
-    score = logisticRegr.score(x_val, y_val)
-    print('-------------val accuracy-------------\n')
-    print(score)
-    
+    # Use multiple metrics to evaluate the model
+    val_accuracy = accuracy_score(y_val, predictions_val)
+    val_precision = precision_score(y_val, predictions_val, average='weighted')
+    val_recall = recall_score(y_val, predictions_val, average='weighted')
+    val_f1 = f1_score(y_val, predictions_val, average='weighted')
+
+    print('-------------validation metrics-------------')
+    print(f'Accuracy: {val_accuracy:.4f}')
+    print(f'Precision: {val_precision:.4f}')
+    print(f'Recall: {val_recall:.4f}')
+    print(f'F1-Score: {val_f1:.4f}\n')
+
     #TODO step 7:
     #load test set
     test_df = load(dirname + '/../../data/processed_vector/test_set')
@@ -118,11 +126,17 @@ if __name__ == "__main__":
     predictions = logisticRegr.predict(x_test)
 
     #TODO step 9:
-    # mesure performance of test set
-    # Use score method to get accuracy of model
-    score = logisticRegr.score(x_test, y_test)
-    print('-------------test accuracy-------------\n')
-    print(score)
+    # measure performance of test set using multiple metrics
+    test_accuracy = accuracy_score(y_test, predictions)
+    test_precision = precision_score(y_test, predictions, average='weighted')
+    test_recall = recall_score(y_test, predictions, average='weighted')
+    test_f1 = f1_score(y_test, predictions, average='weighted')
+
+    print('-------------test metrics-------------')
+    print(f'Accuracy: {test_accuracy:.4f}')
+    print(f'Precision: {test_precision:.4f}')
+    print(f'Recall: {test_recall:.4f}')
+    print(f'F1-Score: {test_f1:.4f}\n')
 
     #TODO step 10:
     #Visualizing stuff
