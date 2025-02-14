@@ -42,16 +42,19 @@ Self annotated data (approx. 200)
 
 
     .
-    |–– data                # Contains of all the datasets needed for the project
-        |–– external        # Contains the original csv files
-        |–– interim         # Unprocessed training, validation and test set
-        |–– processed       # Processed datasets for modeling
-        |–– raw             # Original data transferred to np files which are already including own annotations
-        |–– README.md       # Contains all the download and view links to the datasets
-    |–– data_preperation    # inlcudes scripts to prepare data from 'external' to 'raw'
-    |–– src                 # Python project for modeling
-        |–– models
-        |–– preprocessing   # Preprocess interim data and make it processed data for training
-        |–– utils           # Components that can be reused through out the project
+    |–– data                 # Contains of all the datasets needed for the project
+        |–– external         # Contains the original csv files
+        |–– interim          # Unprocessed training, validation and test set
+        |–– processed        # Processed datasets for logistic regression baseline
+        |–– processed_vector # Processed datasets for modeling
+        |–– raw              # Original data transferred to np files which are already including own annotations
+        |–– README.md        # Contains all the download and view links to the datasets
+    |–– data_preperation     # inlcudes scripts to prepare data from 'external' to 'raw'
+    |–– src                  # Python project for modeling
+        |–– models           # Contains all the prediction and training models
+        |–– trainer          # Contains all the training scripts
+        |–– preprocessing    # Preprocess interim data and make it processed data for training
+        |–– utils            # Components that can be reused through out the project
+        |–– visualization    # Contains all the plot scripts
         ...
-    |–– requirements.txt    # Includes all dependencies that need to be installed
+    |–– requirements.txt     # Includes all dependencies that need to be installed
