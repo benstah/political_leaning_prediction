@@ -41,3 +41,9 @@
 - ./processed/training_set_l : https://ucloud.univie.ac.at/index.php/s/0LJYR2fUAQVPHDP
 - ./processed/validation_set : https://ucloud.univie.ac.at/index.php/s/Wrk7ZWnAIAYhYrO
 - ./processed/test_set :       https://ucloud.univie.ac.at/index.php/s/inZfVXCvT31GwWt 
+
+### Links for downloading/viewing processed_vector datasets
+
+- ./processed_vector/training_set_S : https://ucloud.univie.ac.at/index.php/s/2NYpHJfbfPcboE9
+- ./processed_vector/validation_set : https://ucloud.univie.ac.at/index.php/s/pqZ94fGGyA8YkjH
+- ./processed_vector/test_set       : https://ucloud.univie.ac.at/index.php/s/7zBfjxCfm9z77He
