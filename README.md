@@ -8,7 +8,7 @@ This project uses **Python3**. Make sure it is installed before proceeding.
 To make sure that all dependencies are installed run following command:
 ```pip3 install -r requirements.txt```
 
-Run the ```src/setup/initialize.py``` script, to make sure that all the necessary packages are being downloaded.
+Run the ```src/dependencies/initialize.py``` script, to make sure that all the necessary packages are being downloaded.
 
 It is recommended to use a virtual environment to run this project.
 
