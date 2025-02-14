@@ -14,5 +14,17 @@ data/raw/2019_2
 
 
 data/processed/*
+data/processed_vector/*
+
+/venv/*
 
 best_model.pt
+best_model_w1.pt
+best_model_w20.pt
+best_model_w1_exposed.pt
+best_model_w1_extremly_exposed.pt
+best_model_base.pt
+best_model_w1_extreme_exposed.pt
+best_model_wa.pt
+best_model_wa_exposed.pt
+best_model_wa_extremly_exposed.pt
