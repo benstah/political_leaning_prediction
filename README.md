@@ -10,6 +10,8 @@ To make sure that all dependencies are installed run following command:
 
 Run the ```src/setup/initialize.py``` script, to make sure that all the necessary packages are being downloaded.
 
+It is recommended to use a virtual environment to run this project.
+
 
 ## Models:
 If you do not want to run the training yourself, you can reuse the models for the final test run.
