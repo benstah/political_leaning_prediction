@@ -63,11 +63,12 @@ def plotStats(percentages, counts, bar_labels, bar_colors, title, outlets):
     ax2.set_ylabel('Count')
     ax2.set_title(title)
 
-    plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
-    plt.setp(ax2.get_xticklabels(), rotation=30, horizontalalignment='right')
+    plt.setp(ax.get_xticklabels(), rotation=23, horizontalalignment='right')
+    plt.setp(ax2.get_xticklabels(), rotation=23, horizontalalignment='right')
 
     plt.show()
 
+plt.rcParams.update({'font.size': 16})
 
 title = 'Count of Articles per Outlet - Training Set'
 val_df = load(dirname + '/../../data/processed/training_set_s')

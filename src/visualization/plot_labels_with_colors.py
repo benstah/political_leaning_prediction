@@ -78,6 +78,7 @@ def plotStats(percentages, counts, bar_labels, bar_colors, title):
     plt.show()
 
 
+plt.rcParams.update({'font.size': 22})
 title = 'Labels - Training Set'
 val_df = load(dirname + '/../../data/processed/training_set_s')
 val_df = val_df.loc[val_df["political_leaning"]!="UNDEFINED"]

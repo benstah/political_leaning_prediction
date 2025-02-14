@@ -21,6 +21,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 if __name__ == "__main__": 
 
     PredictModelWrapper.predict(
-        model_name="best_model_base.pt",
-        csv_name="baseline_submission.csv"
-    )   
+        model_name="best_model_wa.pt",
+        csv_name="weight_average_submission.csv"
+    ) 

@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 from transformers import AutoTokenizer, DistilBertModel, DistilBertForSequenceClassification, DistilBertForTokenClassification
 import pandas as pd
+from sklearn.metrics import classification_report, precision_score, recall_score, f1_score, accuracy_score
 
 import sys
 from pathlib import Path 
@@ -26,8 +27,9 @@ dirname = os.path.dirname(__file__)
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 
-if __name__ == "__main__": 
+class PredictModelWrapper:
 
+    @staticmethod
     def countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0 = None):
         
         for i, label in enumerate(real_labels):
@@ -82,6 +84,7 @@ if __name__ == "__main__":
 
     # precision = true positives / true positives + false positives
     # recall = true positives / true positives + false negatives
+    @staticmethod
     def getPresicionAndRecall(class_counts):
         presicion = 0
         recall = 0
@@ -102,6 +105,7 @@ if __name__ == "__main__":
         return presicion, recall
 
     # f1 = 2 * (precision * recall / precision + recall )
+    @staticmethod
     def getF1Score(presicion, recall):
 
         if presicion == 0 and recall == 0:
@@ -109,6 +113,7 @@ if __name__ == "__main__":
         
         return 2 * ((presicion * recall) / (presicion + recall))
 
+    @staticmethod
     def printScores(class_name, pres, rec, f1, support):
 
         print ("{:<15} {:<15} {:<15} {:<15} {:<10}"
@@ -125,37 +130,38 @@ if __name__ == "__main__":
         #     f'| f1-score: {f1: .3f} '
         #     f'| Support: {support}')
 
+    @staticmethod
     def calculateAndDisplayF1Score(class_1, class_2, class_3, class_0 = None):
 
         total_support = 0
         total_f1 = 0
 
         if class_0 is not None:
-            pres_0, rec_0 = getPresicionAndRecall(class_0)
-            f1_0 = getF1Score(pres_0, rec_0)
-            printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
+            pres_0, rec_0 = PredictModelWrapper.getPresicionAndRecall(class_0)
+            f1_0 = PredictModelWrapper.getF1Score(pres_0, rec_0)
+            PredictModelWrapper.printScores("Right 0", pres_0, rec_0, f1_0, class_0["support"])
 
             total_f1 = total_f1 + (f1_0 * class_0["support"])
             total_support += class_0["support"]
 
 
-        pres_1, rec_1 = getPresicionAndRecall(class_1)
-        f1_1 = getF1Score(pres_1, rec_1)
-        printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
+        pres_1, rec_1 = PredictModelWrapper.getPresicionAndRecall(class_1)
+        f1_1 = PredictModelWrapper.getF1Score(pres_1, rec_1)
+        PredictModelWrapper.printScores("Left 1", pres_1, rec_1, f1_1, class_1["support"])
 
         total_f1 = total_f1 + (f1_1 * class_1["support"])
         total_support += class_1["support"]
 
-        pres_2, rec_2 = getPresicionAndRecall(class_2)
-        f1_2 = getF1Score(pres_2, rec_2)
-        printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
+        pres_2, rec_2 = PredictModelWrapper.getPresicionAndRecall(class_2)
+        f1_2 = PredictModelWrapper.getF1Score(pres_2, rec_2)
+        PredictModelWrapper.printScores("Center 3", pres_2, rec_2, f1_2, class_2["support"])
 
         total_f1 = total_f1 + (f1_2 * class_2["support"])
         total_support += class_2["support"]
 
-        pres_3, rec_3 = getPresicionAndRecall(class_3)
-        f1_3 = getF1Score(pres_3, rec_3)
-        printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
+        pres_3, rec_3 = PredictModelWrapper.getPresicionAndRecall(class_3)
+        f1_3 = PredictModelWrapper.getF1Score(pres_3, rec_3)
+        PredictModelWrapper.printScores("Undefined 4", pres_3, rec_3, f1_3, class_3["support"])
 
         total_f1 = total_f1 + (f1_3 * class_3["support"])
         total_support += class_3["support"]
@@ -164,10 +170,7 @@ if __name__ == "__main__":
         print(f'Accuray f1: {accuracy_f1}')
 
 
-
-
-
-
+    @staticmethod
     def get_predictions(model, loader):
         # for m1 to use gpu
         # use_mps = torch.backends.mps.is_available()
@@ -212,6 +215,8 @@ if __name__ == "__main__":
         with torch.no_grad():
             model.eval()
             acc = 0
+            all_predictions = []
+            all_labels = []
             for data_input, test_label, test_label_ids in tqdm(loader):
                 attention_mask = data_input['attention_mask'].to(device)
                 input_ids = data_input['input_ids'].squeeze(1).to(device)
@@ -226,31 +231,46 @@ if __name__ == "__main__":
                 real_labels = test_label.cpu().numpy()
                 pred_labels = preds.argmax(axis=1).cpu().numpy()
 
-                class_0, class_1, class_2, class_3 = countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
+                all_predictions.extend(pred_labels)
+                all_labels.extend(real_labels)
+
+                class_0, class_1, class_2, class_3 = PredictModelWrapper.countScores(real_labels, pred_labels, class_1, class_2, class_3, class_0)
         
         # print(torch.tensor(results_predictions).cpu().detach().numpy())
         accurracy = acc / len(loader.dataset)
         print('Test Accuracy: ' + str(accurracy))
-        calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
+        PredictModelWrapper.calculateAndDisplayF1Score(class_1, class_2, class_3, class_0)
+        
+        # Add sklearn metrics
+        print('\nScikit-learn Metrics:')
+        print('--------------------')
+        print(classification_report(all_labels, all_predictions, 
+              target_names=['Right', 'Left', 'Center'],
+              digits=4))
+        
         return torch.cat(results_predictions).cpu().detach().numpy()
 
-    model = torch.load("best_model_wa_extremly_exposed.pt", map_location='cpu')
 
-    BERT_MODEL = 'distilbert-base-uncased'
-    tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
+    @staticmethod
+    def predict(model_name, csv_name):
 
-    # Load test set
-    test_df = load(dirname + '/../../data/processed/test_set')
+        model = torch.load(model_name, map_location='cpu')
 
-    # drop political rating, because rating should be the column for labels
-    test_df = test_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'political_leaning'], axis=1)
+        BERT_MODEL = 'distilbert-base-uncased'
+        tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
 
-    batch_size = 16
+        # Load test set
+        test_df = load(dirname + '/../../data/processed/test_set')
 
-    test_dataLoader = DataLoader(ArticleDataset(test_df, tokenizer), batch_size=batch_size, num_workers=1, pin_memory=True)
+        # drop political rating, because rating should be the column for labels
+        test_df = test_df.drop(['date_publish', 'outlet', 'authors', 'domain', 'url', 'political_leaning'], axis=1)
 
-    sample_submission = pd.read_csv(dirname + "/../../weight_one_extremly_exposed_submission.csv")
+        batch_size = 16
 
-    sample_submission["target"] = get_predictions(model, test_dataLoader)
+        test_dataLoader = DataLoader(ArticleDataset(test_df, tokenizer), batch_size=batch_size, num_workers=1, pin_memory=True)
 
-    sample_submission.to_csv("weight_one_extremly_exposed_submission.csv", index=False)
+        sample_submission = pd.read_csv(dirname + f"/../../{csv_name}")
+
+        sample_submission["target"] = PredictModelWrapper.get_predictions(model, test_dataLoader)
+
+        sample_submission.to_csv(csv_name, index=False)

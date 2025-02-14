@@ -81,6 +81,8 @@ def plotStats(percentages, counts, bar_labels, bar_colors, title):
     plt.show()
 
 
+plt.rcParams.update({'font.size': 18})
+
 title = 'Length of Articles (Headline, Body) - Training Set'
 val_df = load(dirname + '/../../data/processed/training_set_s')
 percentages, counts, bar_labels, bar_colors = prepareLabels(val_df)
