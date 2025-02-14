@@ -11,24 +11,30 @@ To make sure that all dependencies are installed run following command:
 Run the ```src/setup/initialize.py``` script, to make sure that all the necessary packages are being downloaded.
 
 
+## Models:
+If you do not want to run the training yourself, you can reuse the models for the final test run.
+They need to be added in the root directory of this project:
+
+- best_model_base.pt (DistilBERT Baseline Model): https://ucloud.univie.ac.at/index.php/s/S3o2s7NYXNKz9La
+- best_model_w1.pt (Many K-Fold Model): https://ucloud.univie.ac.at/index.php/s/ABQgy8rEbdKkawd
+- best_model_w1_exposed.pt (Many Expressive K-Fold Model): https://ucloud.univie.ac.at/index.php/s/fRzT5i3aoeffygN
+- best_model_w1_extreme_exposed.pt (Many Extremly Expressive K-Fold Model): https://ucloud.univie.ac.at/index.php/s/agCwr467bm9jrBw
+- best_model_wa.pt (Few K-Fold Model): https://ucloud.univie.ac.at/index.php/s/dBoC7cTq4P27FyS
+- best_model_wa_exposed.pt (Few Expressive K-Fold Model): https://ucloud.univie.ac.at/index.php/s/STCZNeT5EqaHqMG
+- best_model_wa_extremly_exposed.pt (Few Extremly Expressive K-Fold Model): https://ucloud.univie.ac.at/index.php/s/AAXrYY5JPLLFyFn
+- best_model_w20.pt (Leave-One-Out Model): https://ucloud.univie.ac.at/index.php/s/7KfqTAsnJ5PWrkK
+
+
 ## Training set
-Includes weak labeled data
-Leave out article for cross validation and fine tuninig 
-
-  - Label **UNDEFINED** data
-  - Leave out good amount and fine tune parameters step by step
-
+  - Includes weak labeled data
+  - Label **UNDEFINED** data is filtered out for training
 
 ## Validation set
 Self annotated data (approx. 200)
 
-  - Fine tune hyper paramters
-
 
 ## Test set
 Self annotated data (approx. 200)
-
-  - Test performance
 
 
 
@@ -41,6 +47,7 @@ Self annotated data (approx. 200)
         |–– interim         # Unprocessed training, validation and test set
         |–– processed       # Processed datasets for modeling
         |–– raw             # Original data transferred to np files which are already including own annotations
+        |–– README.md       # Contains all the download and view links to the datasets
     |–– data_preperation    # inlcudes scripts to prepare data from 'external' to 'raw'
     |–– src                 # Python project for modeling
         |–– models
