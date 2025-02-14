@@ -15,16 +15,17 @@ It is recommended to use a virtual environment to run this project.
 Please note that this project was developed on a MacBook Pro with an M1 Pro chip.
 Currently, the code is setup for intel machines. If you are using an M1 chip or run into problems during the training, please check the used GPU/CPU setup in the resprective training script.
 The code to check should look like this:
-´´´
-        # for m1 to use gpu
-        use_mps = torch.backends.mps.is_available()
-        device = torch.device("mps" if use_mps else "cpu")
 
-        # for computers which are running on intel
-        use_cuda = torch.cuda.is_available()
-        device = torch.device("cuda" if use_cuda else "cpu")
-        torch.cuda.empty_cache()
-´´´
+```python
+# for m1 to use gpu
+use_mps = torch.backends.mps.is_available()
+device = torch.device("mps" if use_mps else "cpu")
+
+# for computers which are running on intel
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda" if use_cuda else "cpu")
+torch.cuda.empty_cache()
+```
 
 
 ## Models:
