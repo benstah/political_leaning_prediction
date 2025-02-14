@@ -1,4 +1,4 @@
-# Automatic Detection of the Political Leaning of Newspaper Articles
+# Political Leaning Prediction of Newspaper Articles
 
 
 ## Prerequisites:
